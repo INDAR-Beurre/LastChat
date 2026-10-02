@@ -18,6 +18,7 @@ __pycache__/
 /tmp/
 /bootstrap_dump.json
 *.apk
+!dist/*.apk
 *.ap_
 *.aab
 *.class

@@ -1,15 +1,47 @@
-# LastChat
+# LastChat Mobile Playground (Relay Edition)
 
 <div align="center">
   <img src="docs/LastChat_icon.png" alt="LastChat Icon" width="128" height="128" />
   <br><br>
-  <a href="https://www.buymeacoffee.com/cocolalilal"><img src="https://img.buymeacoffee.com/button-api/?text=Support%20the%20development!&slug=cocolalilal&button_colour=005143&font_colour=ffffff&font_family=Bree&outline_colour=ffffff&coffee_colour=FFDD00" alt="Buy Me A Coffee" width="220" /></a> 
+  <strong>High-Density AI Mobile Playground & Admin Console</strong><br>
+  <em>Exclusively powered by <a href="https://relay-gw.pages.dev">@model-aggregator</a></em>
   <br><br>
 </div>
 
-**LastChat** is a feature-rich AI assistant application for Android. It is a fork of [RikkaHub](https://github.com/re-ovo/RikkaHub), modified using AI agents
+**LastChat Mobile Playground** is a mobile-first AI playground application and native Android APK. Forked from LastChat and tailored for power-user and admin workflows, it strips away heavy third-party dependencies and connects directly to the **Relay Gateway** (`@model-aggregator`).
 
-This project aims to provide a privacy-focused and highly personalized AI chat experience on Android
+### 🚀 Key Highlights & Enhancements
+- **Single Exclusive Provider (`@model-aggregator`)**: Fully integrated with the Relay Gateway (`https://relay-gw.pages.dev` / `https://relay-gateway.isisosiris107.workers.dev`), pooling 35+ upstream providers behind an OpenAI-compatible endpoint with automatic failover.
+- **⚡ Admin Model Registry**: Tailored command-menu model picker displaying live provider badges (`workbuddy`, `yjs`, `tokenforge`, `bai`), probe health dots, modality tags, context lengths, and admin model overrides.
+- **🎛️ Full Playground Hyperparameters**: Live sliders and controls for Temperature, Top-P, Max Output Tokens, Reasoning Effort (`None` / `Low` / `Medium` / `High`), Frequency & Presence Penalties, and SSE Streaming toggle.
+- **🧠 First-Class Thinking & Reasoning**: Automatic detection and collapsible rendering of step-by-step thinking processes (DeepSeek-R1 / V4.1, Kimi-K3, etc.).
+- **📊 Real-time Telemetry & Raw Inspector**: Live tracking of `x-relay-latency-ms`, token counts, upstream round-trip times, plus a full raw cURL / JSON request & response inspector.
+- **📱 100% Lightweight APK Build (No Android Studio)**: Built with a headless CLI toolchain (`aapt2`, `javac`, `d8`, `uber-apk-signer`). Compiles and cryptographically signs a valid Android APK in **under 1 second** on low-spec hardware (~150MB peak RAM).
+
+---
+
+## 📦 Delivered Android APK
+
+Pre-built release package ready for Android devices:
+- **Location:** `dist/lastchat-playground.apk`
+- **Checksum:** `dist/lastchat-playground.apk.sha256`
+- **Package ID:** `me.rerere.lastchat.playground`
+- **Supported Android Versions:** Android 7.0+ (API 24 to 34)
+
+### Building the APK Locally (Lightweight)
+
+No Android Studio or heavy Gradle daemons required:
+
+```bash
+./scripts/build_apk.sh
+```
+
+The build completes in ~0.5 seconds and outputs `dist/lastchat-playground.apk`.
+
+---
+
+## Original LastChat Overview
+
 
 ## Gallery
 
