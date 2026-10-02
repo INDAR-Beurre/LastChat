@@ -53,7 +53,7 @@
 
 ## ✨ Executive Overview
 
-**LastLab** is an ultra-streamlined, high-density AI playground application and native Android package. Forked from LastChat, LastLab discards the bloat of fragmented third-party SDKs, heavy background engines, and complex multi-provider configuration in favor of an **exclusive, high-throughput pipeline to the Relay Gateway** (`@model-aggregator`).
+**LastLab** is a next-generation, high-density AI mobile playground application and native Android package engineered specifically for power users, prompt engineers, and LLM practitioners. LastLab provides an **exclusive, ultra-low-latency pipeline to the Relay Gateway** (`@model-aggregator`), combining desktop-grade playground controls with a sub-second headless APK compilation toolchain.
 
 ### Why LastLab?
 - **Unified Provider Pipeline**: A single, robust connection point (`https://relay-gw.pages.dev`) orchestrates 35+ upstream providers (`workbuddy`, `yjs`, `tokenforge`, `bai`, etc.) with intelligent fallback and failover.
@@ -339,6 +339,12 @@ Authorization: Bearer <ADMIN_TOKEN_OPTIONAL>
 <div align="center">
 
 **LastLab** • Crafted with precision for power users and AI practitioners.
+
+<br>
+
+<sub><sup>*Origin lineage: initiated from a fork of LastChat.*</sup></sub>
+
+<br>
 
 [Back to top ↑](#-lastlab)
 
