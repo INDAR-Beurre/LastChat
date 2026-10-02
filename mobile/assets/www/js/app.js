@@ -1,6 +1,6 @@
 /**
  * LastChat Playground Mobile — Application Engine
- * Optimized for Mobile WebView & Responsive Browsers
+ * Optimized for Mobile WebView & Responsive Handhelds
  * Exclusively powered by @model-aggregator (Relay Gateway)
  */
 
@@ -9,7 +9,7 @@
 
   // ---------------------------------------------------------------------------
   // Baseline Initial Models & Providers Catalog
-  // Bundled so the app is 100% responsive instantly offline and on startup
+  // Pre-bundled so the app is 100% responsive instantly offline and on startup
   // ---------------------------------------------------------------------------
   const INITIAL_MODELS = [
     {
@@ -136,6 +136,14 @@
     { id: "zenmux", name: "zenmux", has_key: true, live: true, models: 201 }
   ];
 
+  const DEFAULT_PINNED_MODELS = [
+    'deepseek-v4.1-flash',
+    'kimi-k3-1',
+    'glm-5.2',
+    'agnes-image-2-5-flash',
+    'auto'
+  ];
+
   // ---------------------------------------------------------------------------
   // State Management & Local Storage Keys
   // ---------------------------------------------------------------------------
@@ -145,6 +153,7 @@
     TUNING: 'lastchat_tuning_settings',
     ADMIN: 'lastchat_admin_config',
     CURRENT_MODEL: 'lastchat_selected_model',
+    PINNED_MODELS: 'lastchat_pinned_models',
   };
 
   const DEFAULT_TUNING = {
@@ -171,6 +180,7 @@
     currentSessionId: null,
     models: [...INITIAL_MODELS],
     providers: [...INITIAL_PROVIDERS],
+    pinnedModels: [...DEFAULT_PINNED_MODELS],
     currentModel: 'deepseek-v4.1-flash',
     tuning: { ...DEFAULT_TUNING },
     admin: {
@@ -178,6 +188,7 @@
       adminToken: '',
     },
     activeFilter: 'all',
+    providerFilter: 'all',
     searchQuery: '',
     isGenerating: false,
     abortController: null,
@@ -188,6 +199,7 @@
     },
     activeView: 'chat-view',
     activeInspectorTab: 'curl',
+    modelProbes: {}, // modelId -> { latency, status }
   };
 
   // ---------------------------------------------------------------------------
@@ -219,6 +231,7 @@
     quickReasoningBtn: document.getElementById('quick-reasoning-btn'),
     quickReasoningLabel: document.getElementById('quick-reasoning-label'),
     clearChatBtn: document.getElementById('clear-chat-btn'),
+    exportChatBtn: document.getElementById('export-chat-btn'),
 
     // Tuning View
     systemPromptInput: document.getElementById('system-prompt-input'),
@@ -253,7 +266,10 @@
     // Modals
     modelPickerModal: document.getElementById('model-picker-modal'),
     closeModelPickerBtn: document.getElementById('close-model-picker-btn'),
+    modelQuickShelf: document.getElementById('model-quick-shelf'),
     modelSearchInput: document.getElementById('model-search-input'),
+    clearSearchBtn: document.getElementById('clear-search-btn'),
+    providerFilterChips: document.getElementById('provider-filter-chips'),
     modalModelsList: document.getElementById('modal-models-list'),
     modelCountBadge: document.getElementById('model-count-badge'),
     customModelInput: document.getElementById('custom-model-input'),
@@ -283,6 +299,7 @@
   }
 
   function showToast(text, duration = 2500) {
+    if (!dom.toastContainer) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = text;
@@ -369,6 +386,10 @@
       if (savedModel) {
         state.currentModel = savedModel;
       }
+      const savedPinned = localStorage.getItem(STORAGE_KEYS.PINNED_MODELS);
+      if (savedPinned) {
+        state.pinnedModels = JSON.parse(savedPinned);
+      }
       const savedSessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
       if (savedSessions) {
         state.sessions = JSON.parse(savedSessions);
@@ -406,6 +427,12 @@
   function saveAdmin() {
     try {
       localStorage.setItem(STORAGE_KEYS.ADMIN, JSON.stringify(state.admin));
+    } catch (e) {}
+  }
+
+  function savePinned() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.PINNED_MODELS, JSON.stringify(state.pinnedModels));
     } catch (e) {}
   }
 
@@ -451,6 +478,35 @@
     showToast('Session deleted');
   }
 
+  function renameSession(id, event) {
+    if (event) event.stopPropagation();
+    const session = state.sessions.find(s => s.id === id);
+    if (!session) return;
+    const newTitle = prompt('Rename Session Title:', session.title);
+    if (newTitle && newTitle.trim()) {
+      session.title = newTitle.trim();
+      saveSessions();
+      renderSessionsList();
+      showToast('Session renamed');
+    }
+  }
+
+  function exportCurrentSession() {
+    const session = getCurrentSession();
+    if (!session || !session.messages.length) {
+      showToast('No messages to export');
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(session, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `lastchat-playground-${session.id}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+    showToast('Session exported (JSON)');
+  }
+
   function renderSessionsList() {
     dom.sessionsList.innerHTML = '';
     state.sessions.forEach(sess => {
@@ -464,7 +520,7 @@
         switchToView('chat-view');
       };
 
-      const dateStr = new Date(sess.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const dateStr = new Date(sess.updatedAt || sess.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       card.innerHTML = `
         <div class="session-info">
           <div class="session-title">${escapeHtml(sess.title)}</div>
@@ -476,9 +532,14 @@
             <span>${dateStr}</span>
           </div>
         </div>
-        <button class="session-delete-btn" title="Delete Session" onclick="window.LastChatApp.deleteSession('${sess.id}', event)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-        </button>
+        <div style="display: flex; gap: 4px;">
+          <button class="session-delete-btn" title="Rename Session" onclick="window.LastChatApp.renameSession('${sess.id}', event)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          </button>
+          <button class="session-delete-btn" title="Delete Session" onclick="window.LastChatApp.deleteSession('${sess.id}', event)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </div>
       `;
       dom.sessionsList.appendChild(card);
     });
@@ -514,11 +575,16 @@
       dom.modelStatusDot.className = 'model-dot';
       dom.adminConnStatus.textContent = '● Live';
       dom.adminConnStatus.className = 'status-badge online';
+      renderQuickShelf();
+      renderProviderFilterChips();
       renderModelRegistry();
       updateCurrentModelDisplay();
     } catch (err) {
       logAdmin(`Note on live models fetch: ${err.message} (using cached catalog)`);
       dom.modelStatusDot.className = 'model-dot';
+      renderQuickShelf();
+      renderProviderFilterChips();
+      renderModelRegistry();
     }
   }
 
@@ -535,6 +601,7 @@
         logAdmin(`Discovered ${state.providers.length} upstream providers.`);
       }
       renderProvidersGrid();
+      renderProviderFilterChips();
     } catch (err) {
       logAdmin(`Note on providers probe: ${err.message} (displaying cached providers)`);
       renderProvidersGrid();
@@ -562,8 +629,26 @@
     }
   }
 
+  async function probeModel(modelId, btnEl) {
+    if (btnEl) btnEl.textContent = '⏳';
+    const start = performance.now();
+    try {
+      // Test ping via endpoint
+      const res = await fetch(`${state.admin.baseUrl}/v1/models`, {
+        headers: getAuthHeaders(),
+      });
+      const lat = Math.round(performance.now() - start);
+      state.modelProbes[modelId] = { latency: lat, status: res.ok ? 'ok' : 'err' };
+      if (btnEl) btnEl.textContent = `${lat}ms`;
+      showToast(`${modelId}: ${lat}ms`);
+    } catch (e) {
+      state.modelProbes[modelId] = { latency: null, status: 'fail' };
+      if (btnEl) btnEl.textContent = 'Err';
+    }
+  }
+
   // ---------------------------------------------------------------------------
-  // Model Registry & Model Picker
+  // Model Registry & Model Picker (Admin-Only Experience)
   // ---------------------------------------------------------------------------
   function updateCurrentModelDisplay() {
     const found = state.models.find(m => m.id === state.currentModel);
@@ -574,6 +659,75 @@
     // Upstream provider
     const prov = found?.owned_by || found?.relay?.sources?.[0]?.provider || 'relay';
     dom.telemetryProvider.textContent = prov;
+
+    renderQuickShelf();
+  }
+
+  function renderQuickShelf() {
+    if (!dom.modelQuickShelf) return;
+    dom.modelQuickShelf.innerHTML = '';
+    state.pinnedModels.forEach(mId => {
+      const model = state.models.find(m => m.id === mId) || { id: mId, name: mId };
+      const chip = document.createElement('button');
+      chip.className = `shelf-chip ${mId === state.currentModel ? 'active' : ''}`;
+      chip.title = mId;
+      chip.innerHTML = `
+        <span class="model-dot"></span>
+        <span>${escapeHtml(model.name || model.id)}</span>
+      `;
+      chip.onclick = () => selectModel(mId);
+      dom.modelQuickShelf.appendChild(chip);
+    });
+  }
+
+  function renderProviderFilterChips() {
+    if (!dom.providerFilterChips) return;
+    dom.providerFilterChips.innerHTML = '';
+
+    // "All" chip
+    const allChip = document.createElement('button');
+    allChip.className = `prov-filter-chip ${state.providerFilter === 'all' ? 'active' : ''}`;
+    allChip.textContent = 'All Providers';
+    allChip.onclick = () => {
+      state.providerFilter = 'all';
+      renderProviderFilterChips();
+      renderModelRegistry();
+    };
+    dom.providerFilterChips.appendChild(allChip);
+
+    // List unique providers
+    const provSet = new Set();
+    state.models.forEach(m => {
+      const p = m.owned_by || m.relay?.sources?.[0]?.provider;
+      if (p) provSet.add(p);
+    });
+
+    provSet.forEach(p => {
+      const chip = document.createElement('button');
+      chip.className = `prov-filter-chip ${state.providerFilter === p ? 'active' : ''}`;
+      chip.textContent = p;
+      chip.onclick = () => {
+        state.providerFilter = state.providerFilter === p ? 'all' : p;
+        renderProviderFilterChips();
+        renderModelRegistry();
+      };
+      dom.providerFilterChips.appendChild(chip);
+    });
+  }
+
+  function togglePinModel(modelId, event) {
+    if (event) event.stopPropagation();
+    const idx = state.pinnedModels.indexOf(modelId);
+    if (idx >= 0) {
+      state.pinnedModels.splice(idx, 1);
+      showToast(`Unpinned ${modelId}`);
+    } else {
+      state.pinnedModels.push(modelId);
+      showToast(`Pinned ${modelId} to shelf`);
+    }
+    savePinned();
+    renderQuickShelf();
+    renderModelRegistry();
   }
 
   function renderModelRegistry() {
@@ -582,6 +736,11 @@
 
     const q = state.searchQuery.toLowerCase().trim();
     const filter = state.activeFilter;
+    const provFilter = state.providerFilter;
+
+    if (dom.clearSearchBtn) {
+      dom.clearSearchBtn.style.display = q ? 'block' : 'none';
+    }
 
     const filtered = state.models.filter(m => {
       const id = (m.id || '').toLowerCase();
@@ -591,11 +750,17 @@
       const isReasoning = m.reasoning || m.relay?.reasoning || id.includes('r1') || id.includes('think') || name.includes('reason');
       const isVision = m.relay?.vision || modality.includes('image') || modality.includes('video') || id.includes('vision');
       const isMedia = modality.includes('image') || modality.includes('video');
+      const isPinned = state.pinnedModels.includes(m.id);
+
+      if (provFilter !== 'all' && prov !== provFilter.toLowerCase()) {
+        return false;
+      }
 
       if (q && !id.includes(q) && !name.includes(q) && !prov.includes(q)) {
         return false;
       }
 
+      if (filter === 'pinned' && !isPinned) return false;
       if (filter === 'reasoning' && !isReasoning) return false;
       if (filter === 'vision' && !isVision) return false;
       if (filter === 'media' && !isMedia) return false;
@@ -606,7 +771,7 @@
 
     if (!filtered.length) {
       dom.modalModelsList.innerHTML = `
-        <div style="text-align: center; padding: 24px; color: var(--text-dim);">
+        <div style="text-align: center; padding: 24px; color: var(--text-dim); font-size: 13px;">
           No models matched your query. Enter custom model id below.
         </div>
       `;
@@ -618,6 +783,9 @@
       const prov = m.owned_by || m.relay?.sources?.[0]?.provider || 'relay';
       const isReasoning = m.reasoning || m.relay?.reasoning || m.id.includes('r1');
       const isVision = m.relay?.vision || (m.relay?.modality === 'image');
+      const isPinned = state.pinnedModels.includes(m.id);
+      const ctx = m.relay?.context ? `${Math.round(m.relay.context / 1000)}K ctx` : '';
+      const probeData = state.modelProbes[m.id];
 
       const row = document.createElement('div');
       row.className = `model-row ${isSelected ? 'selected' : ''}`;
@@ -630,12 +798,20 @@
             <span class="model-row-name">${escapeHtml(m.name || m.id)}</span>
             <span class="provider-chip">${escapeHtml(prov)}</span>
           </div>
-          <div class="model-row-id">${escapeHtml(m.id)}</div>
+          <div class="model-row-id">
+            <span>${escapeHtml(m.id)}</span>
+            ${ctx ? `<span class="badge-tag" style="background: rgba(255,255,255,0.06);">${ctx}</span>` : ''}
+          </div>
         </div>
         <div class="model-row-right">
           ${isReasoning ? '<span class="badge-tag reasoning">🧠 Thinks</span>' : ''}
           ${isVision ? '<span class="badge-tag vision">👁 Vision</span>' : ''}
-          <span style="font-size: 11px; color: var(--accent-cyan);">↵</span>
+          <button class="probe-model-btn" title="Probe latency" onclick="window.LastChatApp.probeModel('${escapeHtml(m.id)}', this); event.stopPropagation();">
+            ${probeData ? `${probeData.latency}ms` : '⚡ Ping'}
+          </button>
+          <button class="pin-model-btn ${isPinned ? 'pinned' : ''}" title="${isPinned ? 'Unpin' : 'Pin to Shelf'}" onclick="window.LastChatApp.togglePinModel('${escapeHtml(m.id)}', event);">
+            ${isPinned ? '★' : '☆'}
+          </button>
         </div>
       `;
       dom.modalModelsList.appendChild(row);
@@ -654,7 +830,12 @@
   function openModelPicker() {
     dom.modelPickerModal.classList.add('active');
     dom.modelSearchInput.focus();
+    renderQuickShelf();
+    renderProviderFilterChips();
     renderModelRegistry();
+    try {
+      history.pushState({ modal: 'model-picker' }, '');
+    } catch (e) {}
   }
 
   function closeModelPicker() {
@@ -692,7 +873,7 @@
   // ---------------------------------------------------------------------------
   async function handleSend() {
     if (state.isGenerating) {
-      // User tapped Stop
+      // Stop generation
       if (state.abortController) {
         state.abortController.abort();
         state.abortController = null;
@@ -719,6 +900,7 @@
       content: prompt,
       timestamp: Date.now(),
     });
+    session.updatedAt = Date.now();
     saveSessions();
     renderChatMessages();
 
@@ -826,9 +1008,14 @@
                 const chunk = JSON.parse(trimmed.substring(6));
                 const delta = chunk.choices?.[0]?.delta || {};
 
+                // Capture reasoning
                 if (delta.reasoning_content) {
                   assistantMsg.reasoning += delta.reasoning_content;
+                } else if (delta.reasoning) {
+                  assistantMsg.reasoning += delta.reasoning;
                 }
+
+                // Capture text content
                 if (delta.content) {
                   assistantMsg.content += delta.content;
                 }
@@ -846,6 +1033,8 @@
         assistantMsg.content = msg.content || '';
         if (msg.reasoning_content) {
           assistantMsg.reasoning = msg.reasoning_content;
+        } else if (msg.reasoning) {
+          assistantMsg.reasoning = msg.reasoning;
         }
         parseThinkTags(assistantMsg);
         if (data.usage) {
@@ -875,12 +1064,20 @@
   }
 
   function parseThinkTags(msg) {
-    if (msg.content && msg.content.includes('<think>')) {
+    if (!msg.content) return;
+
+    // Fully closed <think>...</think>
+    if (msg.content.includes('<think>') && msg.content.includes('</think>')) {
       const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
       if (match) {
         msg.reasoning = (msg.reasoning ? msg.reasoning + '\n' : '') + match[1].trim();
         msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/, '').trim();
       }
+    } else if (msg.content.startsWith('<think>')) {
+      // In-flight thinking before closing tag
+      const thoughtPart = msg.content.substring(7);
+      msg.reasoning = thoughtPart;
+      msg.isActivelyThinking = true;
     }
   }
 
@@ -894,6 +1091,26 @@
       dom.sendBtn.classList.remove('stop');
       dom.sendIcon.style.display = 'block';
       dom.stopIcon.style.display = 'none';
+    }
+  }
+
+  function reRunTurn(idx) {
+    const session = getCurrentSession();
+    if (!session || !session.messages[idx]) return;
+    const msg = session.messages[idx];
+    if (msg.role === 'user') {
+      dom.userInput.value = msg.content;
+      autoResizeInput();
+      handleSend();
+    } else {
+      // Re-trigger assistant turn: remove this assistant message and resend previous user prompt
+      session.messages.splice(idx, 1);
+      const lastUser = [...session.messages].reverse().find(m => m.role === 'user');
+      if (lastUser) {
+        dom.userInput.value = lastUser.content;
+        session.messages.pop(); // remove user msg too so handleSend re-adds cleanly
+        handleSend();
+      }
     }
   }
 
@@ -962,6 +1179,8 @@
       <div class="turn-footer">
         <div class="turn-stats">${footerStats}</div>
         <div class="turn-actions">
+          ${isUser ? `<button class="turn-action-btn" onclick="dom.userInput.value='${escapeHtml(msg.content)}'; dom.userInput.focus();">Edit</button>` : ''}
+          <button class="turn-action-btn" onclick="window.LastChatApp.reRunTurn(${idx})">Re-run</button>
           <button class="turn-action-btn" onclick="navigator.clipboard.writeText(this.closest('.chat-turn').querySelector('.message-text').innerText); window.LastChatApp.toast('Copied to clipboard');">
             Copy
           </button>
@@ -998,7 +1217,8 @@
 
     const textEl = lastTurn.querySelector('.message-text');
     if (textEl) {
-      textEl.innerHTML = `<div class="markdown-body">${renderMarkdown(msg.content)}${isStreaming ? '<span class="streaming-cursor"></span>' : ''}</div>`;
+      const showContent = msg.isActivelyThinking ? '' : msg.content;
+      textEl.innerHTML = `<div class="markdown-body">${renderMarkdown(showContent)}${isStreaming ? '<span class="streaming-cursor"></span>' : ''}</div>`;
     }
 
     const statsEl = lastTurn.querySelector('.turn-stats');
@@ -1023,6 +1243,7 @@
   // ---------------------------------------------------------------------------
   function switchToView(viewId) {
     closeModelPicker();
+    dom.inspectorModal.classList.remove('active');
     state.activeView = viewId;
     document.querySelectorAll('.view-pane').forEach(p => {
       p.classList.toggle('active', p.id === viewId);
@@ -1036,6 +1257,36 @@
     } else if (viewId === 'admin-view') {
       fetchProviders();
     }
+
+    try {
+      history.pushState({ view: viewId }, '');
+    } catch (e) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Android Back Button Handler (Native Bridge)
+  // ---------------------------------------------------------------------------
+  function handleBackPressed() {
+    // 1. If model picker modal is active, close it
+    if (dom.modelPickerModal && dom.modelPickerModal.classList.contains('active')) {
+      closeModelPicker();
+      return true;
+    }
+
+    // 2. If inspector modal is active, close it
+    if (dom.inspectorModal && dom.inspectorModal.classList.contains('active')) {
+      dom.inspectorModal.classList.remove('active');
+      return true;
+    }
+
+    // 3. If currently in a non-chat tab (Tuning, Sessions, Admin), navigate back to Chat
+    if (state.activeView !== 'chat-view') {
+      switchToView('chat-view');
+      return true;
+    }
+
+    // 4. On root chat view with no modals open -> return false to allow native app exit
+    return false;
   }
 
   // ---------------------------------------------------------------------------
@@ -1058,6 +1309,15 @@
       state.searchQuery = e.target.value;
       renderModelRegistry();
     });
+
+    if (dom.clearSearchBtn) {
+      dom.clearSearchBtn.addEventListener('click', () => {
+        dom.modelSearchInput.value = '';
+        state.searchQuery = '';
+        renderModelRegistry();
+        dom.modelSearchInput.focus();
+      });
+    }
 
     document.querySelectorAll('.modal-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1107,6 +1367,9 @@
         showToast('Chat cleared');
       }
     });
+    if (dom.exportChatBtn) {
+      dom.exportChatBtn.addEventListener('click', exportCurrentSession);
+    }
 
     // Quick Toolbar buttons
     dom.quickParamsBtn.addEventListener('click', () => switchToView('tuning-view'));
@@ -1197,6 +1460,7 @@
     dom.inspectRawBtn.addEventListener('click', () => {
       dom.inspectorModal.classList.add('active');
       renderInspector();
+      try { history.pushState({ modal: 'inspector' }, ''); } catch (e) {}
     });
     dom.closeInspectorBtn.addEventListener('click', () => {
       dom.inspectorModal.classList.remove('active');
@@ -1222,9 +1486,13 @@
     // Global ESC key to close any modal
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        closeModelPicker();
-        dom.inspectorModal.classList.remove('active');
+        handleBackPressed();
       }
+    });
+
+    // Browser Popstate (History Navigation)
+    window.addEventListener('popstate', (e) => {
+      handleBackPressed();
     });
   }
 
@@ -1278,8 +1546,14 @@
   // ---------------------------------------------------------------------------
   window.LastChatApp = {
     deleteSession,
+    renameSession,
+    exportCurrentSession,
     toast: showToast,
     selectModel,
+    togglePinModel,
+    probeModel,
+    reRunTurn,
+    onBackPressed: handleBackPressed,
     renderChatMessages,
     state,
   };
@@ -1291,6 +1565,8 @@
     loadSavedData();
     populateTuningUI();
     populateAdminUI();
+    renderQuickShelf();
+    renderProviderFilterChips();
     renderModelRegistry();
     renderProvidersGrid();
     updateCurrentModelDisplay();

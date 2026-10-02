@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090c12">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>LastChat Playground</title>
+  <title>LastChat Mobile Playground</title>
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
@@ -102,7 +102,7 @@
             </div>
           </div>
 
-          <!-- Dynamic Chat Message Turns will be inserted here -->
+          <!-- Dynamic Chat Message Turns inserted here -->
         </div>
 
         <!-- Sticky Composer Section -->
@@ -119,6 +119,10 @@
               </button>
             </div>
             <div class="toolbar-right">
+              <button id="export-chat-btn" class="tool-chip" title="Export Session">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                <span>Export</span>
+              </button>
               <button id="clear-chat-btn" class="tool-chip" title="Clear Chat">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                 <span>Clear</span>
@@ -308,7 +312,7 @@
               <button id="save-admin-btn" class="btn-primary" style="flex: 1;">Save Configuration</button>
               <button id="ping-gateway-btn" class="preset-btn" style="padding: 8px 14px;">⚡ Ping Upstream</button>
             </div>
-            <div id="ping-result" class="param-desc" style="font-family: var(--font-mono); color: var(--accent-cyan);"></div>
+            <div id="ping-result" class="param-desc" style="font-family: var(--font-mono); color: var(--accent-cyan); margin-top: 4px;"></div>
           </div>
 
           <!-- Live Provider Matrix -->
@@ -354,40 +358,61 @@
     </nav>
 
     <!-- ===================================================================
-         MODAL 1: ADMIN MODEL REGISTRY (Command Palette)
+         MODAL 1: ADMIN MODEL REGISTRY (Command Palette / Bottom Sheet)
          =================================================================== -->
     <div id="model-picker-modal" class="modal-overlay">
       <div class="modal-card">
+        <div class="bottom-sheet-handle"></div>
         <div class="modal-header">
           <div class="modal-title">
             <span class="admin-badge-big">⚡ ADMIN MODEL REGISTRY</span>
             <span id="model-count-badge" class="badge-tag vision">0 Models</span>
           </div>
-          <button id="close-model-picker-btn" class="icon-btn">
+          <button id="close-model-picker-btn" class="icon-btn" title="Close">
             <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
           </button>
         </div>
 
-        <div class="modal-search-box">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          <input type="text" id="model-search-input" class="modal-search-input" placeholder="Search models or providers (e.g. deepseek, kimi, workbuddy)...">
+        <!-- Admin Quick Shelf (Pinned Favorites) -->
+        <div class="admin-quick-shelf-section">
+          <div class="shelf-label">⚡ Admin Quick Picks:</div>
+          <div id="model-quick-shelf" class="model-quick-shelf">
+            <!-- Dynamic quick shelf chips -->
+          </div>
         </div>
 
+        <!-- Search Input -->
+        <div class="modal-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-dim)"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="model-search-input" class="modal-search-input" placeholder="Search models, providers (e.g. deepseek, kimi, workbuddy)...">
+          <button id="clear-search-btn" class="icon-btn" style="padding: 2px; display: none;" title="Clear search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
+        </div>
+
+        <!-- Modality Filter Tabs -->
         <div class="modal-tabs">
           <button class="modal-tab-btn active" data-filter="all">All Models</button>
           <button class="modal-tab-btn" data-filter="reasoning">🧠 Reasoning</button>
           <button class="modal-tab-btn" data-filter="chat">💬 Chat & Code</button>
           <button class="modal-tab-btn" data-filter="vision">👁 Vision</button>
           <button class="modal-tab-btn" data-filter="media">🎬 Media</button>
+          <button class="modal-tab-btn" data-filter="pinned">⭐ Pinned</button>
         </div>
 
+        <!-- Upstream Provider Chips Filter -->
+        <div class="provider-filter-scroll" id="provider-filter-chips">
+          <!-- Dynamic provider filter chips -->
+        </div>
+
+        <!-- Model List -->
         <div id="modal-models-list" class="modal-models-list">
           <!-- Dynamic Model Rows Inserted Here -->
         </div>
 
         <!-- Custom Model ID Input for Admin Override -->
-        <div style="padding: 10px 14px; background: var(--bg-elevated); border-top: 1px solid var(--border-subtle); display: flex; gap: 8px;">
-          <input type="text" id="custom-model-input" class="input-field" placeholder="Admin override: custom model id...">
+        <div class="custom-model-bar">
+          <input type="text" id="custom-model-input" class="input-field" placeholder="Admin override: custom model id or route...">
           <button id="set-custom-model-btn" class="preset-btn" style="white-space: nowrap;">Set Model</button>
         </div>
       </div>
@@ -398,12 +423,13 @@
          =================================================================== -->
     <div id="inspector-modal" class="modal-overlay">
       <div class="modal-card">
+        <div class="bottom-sheet-handle"></div>
         <div class="modal-header">
           <div class="modal-title">
             <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
             Telemetry & Raw Inspector
           </div>
-          <button id="close-inspector-btn" class="icon-btn">
+          <button id="close-inspector-btn" class="icon-btn" title="Close">
             <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
           </button>
         </div>

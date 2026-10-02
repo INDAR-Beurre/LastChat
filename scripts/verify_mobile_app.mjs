@@ -1,5 +1,41 @@
-import { spawn } from "node:child_process";
+import http from "node:http";
 import fs from "node:fs";
+import path from "node:path";
+import { spawn } from "node:child_process";
+
+const PROJECT_DIR = "/home/alex/Projects/LastChat";
+const WWW_DIR = path.join(PROJECT_DIR, "mobile/assets/www");
+const DIST_DIR = path.join(PROJECT_DIR, "dist");
+
+// 1. In-process static HTTP server for mobile assets
+const mimeTypes = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "text/javascript",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".svg": "image/svg+xml"
+};
+
+const server = http.createServer((req, res) => {
+  let reqPath = req.url.split("?")[0];
+  if (reqPath === "/") reqPath = "/index.html";
+  const filePath = path.join(WWW_DIR, reqPath);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath);
+    res.writeHead(200, {
+      "Content-Type": mimeTypes[ext] || "text/plain",
+      "Access-Control-Allow-Origin": "*"
+    });
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    res.writeHead(404);
+    res.end("Not found");
+  }
+});
+
+await new Promise((resolve) => server.listen(8765, "127.0.0.1", resolve));
+console.log("Local HTTP asset server listening at http://127.0.0.1:8765");
 
 async function runVerification() {
   console.log("=== Starting LastChat Mobile Playground Automated Verification ===");
@@ -29,6 +65,7 @@ async function runVerification() {
   if (!wsUrl) {
     console.error("Failed to connect to Helium browser CDP on port " + port);
     browser.kill();
+    server.close();
     process.exit(1);
   }
 
@@ -81,7 +118,7 @@ async function runVerification() {
   async function takeScreenshot(filename) {
     const shot = await send("Page.captureScreenshot", { format: "png" }, sessionId);
     if (shot.result?.data) {
-      fs.writeFileSync(`/home/alex/Projects/LastChat/dist/${filename}`, Buffer.from(shot.result.data, "base64"));
+      fs.writeFileSync(path.join(DIST_DIR, filename), Buffer.from(shot.result.data, "base64"));
       console.log(`Saved screenshot: dist/${filename}`);
     }
   }
@@ -95,12 +132,16 @@ async function runVerification() {
   console.log(`Initial model loaded: "${modelName}"`);
   await takeScreenshot("verify_mobile_chat_empty.png");
 
-  // Check 2: Open Model Picker Modal
-  console.log("Opening Model Registry modal...");
+  // Check 2: Open Model Registry Modal (Admin bottom sheet)
+  console.log("Opening Admin Model Registry modal...");
   await evalCode("document.getElementById('model-trigger-btn').click()");
   await new Promise(r => setTimeout(r, 400));
   const isModalActive = await evalCode("document.getElementById('model-picker-modal').classList.contains('active')");
   console.log(`Model modal opened: ${isModalActive}`);
+
+  // Check Admin Quick Shelf chips
+  const quickShelfChips = await evalCode("document.querySelectorAll('#model-quick-shelf .shelf-chip').length");
+  console.log(`Admin quick shelf chips: ${quickShelfChips}`);
 
   // Filter with search
   await evalCode("document.getElementById('model-search-input').value = 'deepseek'; document.getElementById('model-search-input').dispatchEvent(new Event('input'))");
@@ -113,7 +154,14 @@ async function runVerification() {
   const updatedModel = await evalCode("document.getElementById('current-model-name').textContent");
   console.log(`Updated model after selection: "${updatedModel}"`);
 
-  // Check 3: Tuning View
+  // Check 3: Back Button Handling
+  console.log("Testing Android Back Button Bridge...");
+  await evalCode("document.getElementById('model-trigger-btn').click()");
+  await new Promise(r => setTimeout(r, 300));
+  const backHandled1 = await evalCode("window.LastChatApp.onBackPressed()");
+  console.log(`Back button closed modal: ${backHandled1}`);
+
+  // Check 4: Tuning View
   console.log("Switching to Tuning View...");
   await evalCode("document.querySelector('[data-view=\"tuning-view\"]').click()");
   await new Promise(r => setTimeout(r, 400));
@@ -122,7 +170,13 @@ async function runVerification() {
   const systemPrompt = await evalCode("document.getElementById('system-prompt-input').value");
   console.log(`Architect preset prompt: "${systemPrompt.substring(0, 40)}..."`);
 
-  // Check 4: Admin Gateway View
+  // Back button from Tuning view returns to Chat view
+  const backHandled2 = await evalCode("window.LastChatApp.onBackPressed()");
+  console.log(`Back button returned to chat view: ${backHandled2}`);
+  const activeView = await evalCode("window.LastChatApp.state.activeView");
+  console.log(`Active view after back: "${activeView}"`);
+
+  // Check 5: Admin Gateway View
   console.log("Switching to Admin Gateway View...");
   await evalCode("document.querySelector('[data-view=\"admin-view\"]').click()");
   await new Promise(r => setTimeout(r, 800));
@@ -130,7 +184,7 @@ async function runVerification() {
   console.log(`Discovered provider cards: ${providerCount}`);
   await takeScreenshot("verify_mobile_admin_view.png");
 
-  // Check 5: Chat View & Send Prompt
+  // Check 6: Chat View & Send Prompt
   console.log("Switching back to Chat View and testing prompt interaction...");
   await evalCode("document.querySelector('[data-view=\"chat-view\"]').click()");
   await new Promise(r => setTimeout(r, 300));
@@ -157,14 +211,14 @@ async function runVerification() {
   await new Promise(r => setTimeout(r, 600));
   await takeScreenshot("verify_mobile_reasoning_and_code.png");
 
-  // Check 6: Raw Inspector Modal
+  // Check 7: Raw Inspector Modal
   console.log("Opening Raw JSON Inspector modal...");
   await evalCode("document.getElementById('inspect-raw-btn').click()");
   await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_inspector.png");
   await evalCode("document.getElementById('close-inspector-btn').click()");
 
-  // Check 7: Compact 360x780 Mobile Screen Viewport
+  // Check 8: Compact 360x780 Mobile Screen Viewport
   console.log("Testing compact 360x780 mobile viewport...");
   await send("Emulation.setDeviceMetricsOverride", {
     width: 360,
@@ -179,10 +233,12 @@ async function runVerification() {
   consoleLogs.forEach(l => console.log(l));
   console.log("=== Verification Completed Successfully! ===");
   browser.kill();
+  server.close();
   process.exit(0);
 }
 
 runVerification().catch(err => {
   console.error("Verification failed:", err);
+  server.close();
   process.exit(1);
 });
