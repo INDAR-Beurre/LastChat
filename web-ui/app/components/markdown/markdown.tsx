@@ -65,7 +65,7 @@ function preProcess(content: string): string {
 
   // Find all protected blocks (code and math)
   const protectedRanges: { start: number; end: number }[] = [...codeBlocks];
-  const mathBlockRegex = /\$\$[\s\S]*?\$\$|\$[^\$\n]+?\$/g;
+  const mathBlockRegex = /\$\$[\s\S]*?\$\$|\$[^$\n]+?\$/g;
   while ((match = mathBlockRegex.exec(result)) !== null) {
     protectedRanges.push({ start: match.index, end: match.index + match[0].length });
   }
@@ -83,7 +83,7 @@ function preProcess(content: string): string {
   });
 
   // Replace ++underline++ to <u>underline</u>, skip code & math
-  result = result.replace(/(?<![\+\\])\+\+(?![\+\s])([^\+\n]+?)(?<![\s\+\\])\+\+(?!\+)/g, (match, group1, offset) => {
+  result = result.replace(/(?<![+\\])\+\+(?![+\s])([^+\n]+?)(?<![\s+\\])\+\+(?!\+)/g, (match, group1, offset) => {
     if (isProtected(offset, offset + match.length)) {
       return match;
     }

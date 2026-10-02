@@ -59,24 +59,24 @@
 }
 
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.8141 0 0);
-  --card: oklch(0.2264 0 0);
+  --background: oklch(0.05 0.005 260);
+  --foreground: oklch(0.88 0.008 80);
+  --card: oklch(0.14 0.006 260);
   --card-foreground: oklch(0.9173 0.0133 82.4015);
-  --popover: oklch(0.2264 0 0);
+  --popover: oklch(0.12 0.008 260);
   --popover-foreground: oklch(0.9173 0.0133 82.4015);
   --primary: oklch(0.4325 0.0376 198.3573);
   --primary-content: color-mix(in oklab, var(--primary) 65%, var(--foreground));
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.3329 0 0);
+  --secondary: oklch(0.2 0.004 260);
   --secondary-foreground: oklch(0.8055 0.0194 100.1916);
-  --muted: oklch(0.1344 0 0);
+  --muted: oklch(0.1 0.004 260);
   --muted-foreground: oklch(0.6348 0.0113 81.7875);
-  --accent: oklch(0.3329 0 0);
+  --accent: oklch(0.18 0.006 260);
   --accent-foreground: oklch(0.852 0.0205 100.6306);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.1822 0 0);
+  --border: oklch(0.22 0.006 260);
   --input: oklch(0.3904 0 0);
   --ring: oklch(0.5103 0 0);
   --chart-1: oklch(0.4325 0.0376 198.3573);
@@ -84,13 +84,13 @@
   --chart-3: oklch(0.6348 0.0113 81.7875);
   --chart-4: oklch(0.4681 0.0069 84.5829);
   --chart-5: oklch(0.3523 0 0);
-  --sidebar: oklch(0.2264 0 0);
+  --sidebar: oklch(0.1 0.005 260);
   --sidebar-foreground: oklch(0.9173 0.0133 82.4015);
   --sidebar-primary: oklch(0.4325 0.0376 198.3573);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.3329 0 0);
+  --sidebar-accent: oklch(0.18 0.006 260);
   --sidebar-accent-foreground: oklch(0.852 0.0205 100.6306);
-  --sidebar-border: oklch(0.1822 0 0);
+  --sidebar-border: oklch(0.16 0.005 260);
   --sidebar-ring: oklch(0.5103 0 0);
   --font-sans: Google Sans Flex, ui-sans-serif, sans-serif, system-ui;
   --font-serif: Google Sans Flex, ui-sans-serif, sans-serif, system-ui;
@@ -102,14 +102,14 @@
   --shadow-spread: 0px;
   --shadow-opacity: 0.05;
   --shadow-color: #000000;
-  --shadow-2xs: 0 1px 10px 0px hsl(0 0% 0% / 0.03);
-  --shadow-xs: 0 1px 10px 0px hsl(0 0% 0% / 0.03);
-  --shadow-sm: 0 1px 10px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow: 0 1px 10px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
-  --shadow-md: 0 1px 10px 0px hsl(0 0% 0% / 0.05), 0 2px 4px -1px hsl(0 0% 0% / 0.05);
-  --shadow-lg: 0 1px 10px 0px hsl(0 0% 0% / 0.05), 0 4px 6px -1px hsl(0 0% 0% / 0.05);
-  --shadow-xl: 0 1px 10px 0px hsl(0 0% 0% / 0.05), 0 8px 10px -1px hsl(0 0% 0% / 0.05);
-  --shadow-2xl: 0 1px 10px 0px hsl(0 0% 0% / 0.13);
+  --shadow-2xs: 0 1px 10px 0px hsl(0 0% 0% / 0.06);
+  --shadow-xs: 0 1px 10px 0px hsl(0 0% 0% / 0.06);
+  --shadow-sm: 0 1px 10px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
+  --shadow: 0 1px 10px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
+  --shadow-md: 0 1px 10px 0px hsl(0 0% 0% / 0.12), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0 1px 10px 0px hsl(0 0% 0% / 0.14), 0 4px 6px -1px hsl(0 0% 0% / 0.12);
+  --shadow-xl: 0 1px 10px 0px hsl(0 0% 0% / 0.16), 0 8px 10px -1px hsl(0 0% 0% / 0.14);
+  --shadow-2xl: 0 1px 10px 0px hsl(0 0% 0% / 0.22);
 }
 
 :root {
@@ -709,4 +709,176 @@
 .styled-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+
+/* ==========================================================================
+   LastLab — Visual Polish & Micro-interaction Layer
+   ========================================================================== */
+
+/* Glassmorphism surface utility */
+@layer utilities {
+  .glass-surface {
+    background: color-mix(in srgb, var(--card) 75%, transparent);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  }
+
+  .glass-surface-elevated {
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: blur(32px) saturate(1.5);
+    -webkit-backdrop-filter: blur(32px) saturate(1.5);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    box-shadow: 0 8px 32px color-mix(in srgb, var(--foreground) 5%, transparent),
+                inset 0 1px 0 color-mix(in srgb, var(--background) 30%, transparent);
+  }
+
+  .glass-border {
+    border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--background) 20%, transparent);
+  }
+}
+
+/* Fluid element transitions — all interactive elements get smooth motion */
+@layer base {
+  button,
+  [role="button"],
+  a,
+  input,
+  textarea,
+  select {
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+                box-shadow 0.18s ease, transform 0.12s ease, opacity 0.15s ease;
+  }
+}
+
+/* Mobile touch target enforcement: min 44px on narrow viewports */
+@media (max-width: 480px) {
+  button:not([data-no-touch-enforce]),
+  [role="button"]:not([data-no-touch-enforce]),
+  a:not([data-no-touch-enforce]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exempt compact inline elements */
+  .shelf-chip,
+  .seg-btn,
+  .code-block-copy,
+  .code-block-footer,
+  .nerd-badge,
+  .telemetry-badge,
+  .mini-btn,
+  [data-no-touch-enforce] {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+.telemetry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  background: color-mix(in srgb, var(--card) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  color: var(--muted-foreground);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.15s ease;
+}
+
+.telemetry-badge:hover {
+  background: color-mix(in srgb, var(--card) 95%, transparent);
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--border) 90%, transparent);
+}
+
+/* Pulsing reasoning progress indicator */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent); }
+  50% { box-shadow: 0 0 12px 4px color-mix(in srgb, var(--primary) 20%, transparent); }
+}
+
+.pulse-reasoning {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Telemetry badge micro-animation */
+@keyframes badge-fade-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-badge-in {
+  animation: badge-fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Smooth drawer/sheet entrance */
+@keyframes slide-up-spring {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slide-up-spring 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Token counter shimmer */
+@keyframes shimmer-slide {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    color-mix(in srgb, var(--primary) 60%, var(--foreground)) 50%,
+    var(--primary) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-slide 2.5s linear infinite;
+}
+
+/* Enhanced code block hover micro-interaction */
+.markdown .code-block:hover {
+  border-color: color-mix(in srgb, var(--border) 90%, var(--primary));
+  transition: border-color 0.25s ease;
+}
+
+/* Drawer handle styling polish */
+[data-vaul-drawer] [data-vaul-handle-hitarea] {
+  padding-top: 8px;
+  padding-bottom: 4px;
+}
+
+[data-vaul-drawer] [data-vaul-handle] {
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+  transition: background 0.2s ease;
+}
+
+[data-vaul-drawer] [data-vaul-handle]:hover {
+  background: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
+}
+
+/* Mobile-optimized scrollbar: narrower on small viewports */
+@media (max-width: 480px) {
+  * {
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
 }

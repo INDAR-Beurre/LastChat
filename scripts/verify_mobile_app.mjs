@@ -157,16 +157,22 @@ async function runVerification() {
   await evalCode(`(() => {
     const textarea = document.querySelector('textarea');
     if (textarea) {
-      textarea.value = 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?';
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+      if (nativeSetter) {
+        nativeSetter.call(textarea, 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?');
+      } else {
+        textarea.value = 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?';
+      }
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
     }
   })()`);
-  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 400));
   
   // Click send button
   await evalCode(`(() => {
-    const sendBtn = document.querySelector('button[type="submit"]') || document.querySelector('form button');
-    if (sendBtn) sendBtn.click();
+    const sendBtn = document.getElementById('send-message-btn') || document.querySelector('button[type="submit"]');
+    if (sendBtn && !sendBtn.disabled) sendBtn.click();
     else {
       // Fallback: dispatch Enter key on textarea
       const textarea = document.querySelector('textarea');
@@ -175,7 +181,29 @@ async function runVerification() {
   })()`);
 
   console.log("Waiting for streaming reasoning and response...");
-  await new Promise(r => setTimeout(r, 3500));
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 300));
+    const generating = await evalCode(`(() => {
+      const stopBtn = document.querySelector('button#send-message-btn.bg-destructive') || document.querySelector('svg.lucide-square');
+      return !!stopBtn;
+    })()`);
+    if (!generating && i > 3) {
+      console.log(`Stream generation completed in ~${(i + 1) * 300}ms`);
+      break;
+    }
+  }
+
+  // Ensure code block and telemetry are scrolled into clear view
+  await evalCode(`(() => {
+    const codeBlock = document.querySelector('.code-block-container') || document.querySelector('pre') || document.querySelector('.telemetry-badge');
+    if (codeBlock) {
+      codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
+    } else {
+      const assistant = document.querySelector('[data-message-role="assistant"]') || document.querySelectorAll('.chat-turn')[1];
+      assistant?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+  })()`);
+  await new Promise(r => setTimeout(r, 500));
   await takeScreenshot("verify_mobile_reasoning_and_code.png");
 
   // Check 5: Compact 360x780 Mobile Screen Viewport
@@ -186,7 +214,14 @@ async function runVerification() {
     deviceScaleFactor: 2,
     mobile: true
   }, sessionId);
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 500));
+  await evalCode(`(() => {
+    const codeBlock = document.querySelector('.code-block-container') || document.querySelector('pre') || document.querySelector('.telemetry-badge');
+    if (codeBlock) {
+      codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
+    }
+  })()`);
+  await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_compact_360.png");
 
   console.log("=== Mobile App Verification Completed Successfully! ===");

@@ -150,8 +150,8 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 | **Application Label** | `LastLab` | System launcher display name |
 | **Target SDK** | `33` (Android 13 / 14) | Full modern Android compliance |
 | **Minimum SDK** | `24` (Android 7.0 Nougat) | Broad hardware compatibility |
-| **Binary Size** | **2.0 MB** (`2,014,852` bytes) | Bundles authentic React 19 production build |
-| **SHA-256 Checksum** | `2fac83df8b87c9073a405fcfa33f56462dc0733a9e5b9959065332de724164ca` | Cryptographic SHA-256 integrity hash |
+| **Binary Size** | **2.0 MB** (`2,023,044` bytes) | Bundles authentic React 19 production build |
+| **SHA-256 Checksum** | `0918dff629abb0ce872bf850e23cf7af667f4024c906796651ce70fbaacf8fc3` | Cryptographic SHA-256 integrity hash |
 | **Signature Schemes** | `v1 + v2 + v3` | Dual JAR & APK Signature Scheme v2/v3 verified |
 
 ---

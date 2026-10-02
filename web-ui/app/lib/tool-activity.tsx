@@ -532,7 +532,7 @@ export function ToolDetailContent({
   tool,
   t,
   displaySetting,
-  onToolApproval,
+  onToolApproval: _onToolApproval,
 }: {
   tool: UIToolPart;
   t: TFunction;

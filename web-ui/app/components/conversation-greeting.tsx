@@ -53,20 +53,23 @@ export function ConversationGreeting({ className }: { className?: string }) {
   const bucket = getGreetingBucket(hour);
 
   return (
-    <div className={cn("flex flex-col items-center gap-2 text-balance", className)}>
-      <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>LastLab Playground</span>
-        <span className="text-muted-foreground/60">•</span>
-        <span className="text-muted-foreground text-[11px] font-mono">relay-gw.pages.dev</span>
+    <div className={cn("flex flex-col items-center gap-3 text-balance", className)}>
+      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3.5 py-1.5 text-xs font-medium text-primary backdrop-blur-sm ring-1 ring-primary/10">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        </span>
+        <span className="font-semibold">LastLab Playground</span>
+        <span className="text-muted-foreground/40">•</span>
+        <span className="text-muted-foreground/80 text-[10px] font-mono">relay-gw.pages.dev</span>
       </div>
       <span className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
         {t(`conversations.greeting.${bucket}`, {
           defaultValue: GREETING_DEFAULTS[bucket],
         })}
       </span>
-      <p className="text-xs text-muted-foreground max-w-md text-center">
-        Mobile AI playground powered exclusively by the Relay Gateway (<span className="text-primary font-mono">@model-aggregator</span>).
+      <p className="text-xs text-muted-foreground/80 max-w-md text-center leading-relaxed">
+        Mobile AI playground powered exclusively by the Relay Gateway (<span className="text-primary font-mono font-medium">@model-aggregator</span>).
       </p>
     </div>
   );

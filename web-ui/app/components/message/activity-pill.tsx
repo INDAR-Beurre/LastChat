@@ -17,7 +17,6 @@ import { useTranslation } from "react-i18next";
 import {
   CHAT_MOTION_DURATION,
   getChatFadeTransition,
-  getChatLayoutTransition,
   getChatTactileTransition,
   useChatReducedMotion,
 } from "~/lib/chat-motion";
@@ -292,9 +291,10 @@ function ActivitySegmentButton({
       className={cn(
         "border text-card-foreground shadow-sm transition-colors hover:bg-card active:shadow-none",
         radiusClass,
+        live && segment.type === "reasoning" && "pulse-reasoning",
         segment.variant === "mini"
-          ? "inline-flex size-9 items-center justify-center border-border/70 bg-card/88"
-          : "inline-flex h-9 max-w-full items-center border-border/70 bg-card/88 px-3.5 text-xs font-medium",
+          ? "inline-flex size-9 items-center justify-center border-border/50 bg-card/88"
+          : "inline-flex h-9 max-w-full items-center border-border/50 bg-card/88 px-3.5 text-xs font-medium",
       )}
       title={segment.variant === "mini" ? segment.type : undefined}
       aria-label={segment.label ?? segment.type}

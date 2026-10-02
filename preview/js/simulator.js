@@ -318,13 +318,13 @@
       if (!sess) return;
 
       sess.messages.push({
-        role: 'user',
+        role: 'USER',
         content: 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?',
         timestamp: Date.now() - 4000
       });
 
       sess.messages.push({
-        role: 'assistant',
+        role: 'ASSISTANT',
         model: 'deepseek-v4.1-flash',
         reasoning: 'First, identify the core requirement: concise Kotlin coroutines demonstration.\nSecond, choose runBlocking with structured launch.\nThird, format with clean syntax highlighting and key highlights breakdown.',
         content: 'Here is an idiomatic and concise Kotlin coroutines example:\n\n```kotlin\nimport kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        delay(1000L)\n        println("Hello from LastLab!")\n    }\n    println("Running...")\n    job.join()\n}\n```\n\n### Key Highlights:\n- **Structured Concurrency**: Using `runBlocking` creates a top-level coroutine scope.\n- **Non-blocking delay**: `delay(1000L)` suspends without freezing threads.\n- **Deterministic Join**: `job.join()` awaits asynchronous completion cleanly.',
@@ -355,18 +355,38 @@
         };
       }
 
-      app.switchToView('chat-view');
-      app.renderChatMessages();
+      const doc = win.document;
+      const textarea = doc.querySelector('textarea');
+      if (textarea) {
+        const nativeSetter = Object.getOwnPropertyDescriptor(win.HTMLTextAreaElement.prototype, "value")?.set;
+        if (nativeSetter) {
+          nativeSetter.call(textarea, 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?');
+        } else {
+          textarea.value = 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?';
+        }
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        textarea.dispatchEvent(new Event('change', { bubbles: true }));
+        setTimeout(() => {
+          const sendBtn = doc.getElementById('send-message-btn') || doc.querySelector('button[type="submit"]');
+          if (sendBtn && !sendBtn.disabled) sendBtn.click();
+          else textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        }, 150);
+      }
+
+      app.switchToView?.('chat-view');
+      if (typeof app.renderChatMessages === 'function') {
+        app.renderChatMessages();
+      }
 
       // Cleanly scroll assistant message into view and dismiss transient toasts
       setTimeout(() => {
         const doc = win.document;
         doc.querySelectorAll('.toast, .toast-container').forEach(t => t.remove());
-        const assistantTurn = doc.querySelector('.chat-turn.assistant');
+        const assistantTurn = doc.querySelector('.chat-turn.assistant') || doc.querySelector('[data-message-role="assistant"]');
         if (assistantTurn) {
           assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
         }
-      }, 50);
+      }, 500);
 
       addLog('info', 'Injected full reasoning & code block into active chat session.');
     } catch (e) {

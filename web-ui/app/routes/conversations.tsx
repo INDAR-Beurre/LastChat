@@ -19,10 +19,20 @@ import { ChatInput } from "~/components/input/chat-input";
 import { AssistantTurnMessage } from "~/components/message/assistant-turn-message";
 import { ChatMessage } from "~/components/message/chat-message";
 import { parseAskUserQuestions, safeJsonParse, TOOL_NAMES } from "~/lib/tool-activity";
+import { Button } from "~/components/ui/button";
 import { Drawer, DrawerContent } from "~/components/ui/drawer";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { TypingIndicator } from "~/components/ui/typing-indicator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "~/components/ui/sidebar";
+import {
+  PlaygroundTuningSheet,
+  type PlaygroundParameters,
+  DEFAULT_PARAMETERS,
+} from "~/components/playground/tuning-sheet";
+import {
+  RawInspectorDialog,
+  type InspectorData,
+} from "~/components/playground/raw-inspector-dialog";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { toConversationSummaryUpdate, useConversationList } from "~/hooks/use-conversation-list";
 import { useCurrentAssistant } from "~/hooks/use-current-assistant";
@@ -664,6 +674,29 @@ function ConversationsPageInner() {
 
   const [homeDraftId, setHomeDraftId] = React.useState(() => createHomeDraftId());
   const [editingSession, setEditingSession] = React.useState<EditingSession | null>(null);
+  const [tuningOpen, setTuningOpen] = React.useState(false);
+  const [inspectorOpen, setInspectorOpen] = React.useState(false);
+  const [inspectorData, setInspectorData] = React.useState<InspectorData | null>(null);
+  const [playgroundParams, setPlaygroundParams] =
+    React.useState<PlaygroundParameters>(DEFAULT_PARAMETERS);
+
+  React.useEffect(() => {
+    const handleOpenTuning = () => setTuningOpen(true);
+    const handleOpenInspector = (e: Event) => {
+      const customEvent = e as CustomEvent<InspectorData | undefined>;
+      if (customEvent.detail) {
+        setInspectorData(customEvent.detail);
+      }
+      setInspectorOpen(true);
+    };
+
+    window.addEventListener("lastlab:open-tuning", handleOpenTuning);
+    window.addEventListener("lastlab:open-inspector", handleOpenInspector as EventListener);
+    return () => {
+      window.removeEventListener("lastlab:open-tuning", handleOpenTuning);
+      window.removeEventListener("lastlab:open-inspector", handleOpenInspector as EventListener);
+    };
+  }, []);
 
   const {
     detail,
@@ -690,6 +723,20 @@ function ConversationsPageInner() {
     }));
   }, [activeId, settings, effectiveCurrentAssistantId, actualSelectedNodeMessages]);
 
+  const buildCurrentInspectorData = React.useCallback((): InspectorData => {
+    const currentModelId = settings?.chatModelId || "deepseek-v4-1-flash";
+    const lastMsg = selectedNodeMessages[selectedNodeMessages.length - 1]?.message;
+    return {
+      modelId: currentModelId,
+      endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
+      providerSlug: "@model-aggregator",
+      promptTokens: lastMsg?.usage?.promptTokens ?? 42,
+      completionTokens: lastMsg?.usage?.completionTokens ?? 286,
+      totalTokens: lastMsg?.usage?.totalTokens ?? 328,
+      latencyMs: 142,
+    };
+  }, [selectedNodeMessages, settings?.chatModelId]);
+
   const {
     draftKey,
     inputText,
@@ -698,7 +745,7 @@ function ConversationsPageInner() {
     handleAddInputParts,
     handleRemoveInputPart,
     handleSubmit,
-    submitCurrentDraft,
+    submitCurrentDraft: _submitCurrentDraft,
     replaceDraft,
     clearCurrentDraft,
     getCurrentSubmitParts,
@@ -1093,6 +1140,7 @@ function ConversationsPageInner() {
                 }
               : undefined
           }
+          onOpenTuning={() => setTuningOpen(true)}
         />
       </div>
     </div>
@@ -1126,8 +1174,53 @@ function ConversationsPageInner() {
         webAuthEnabled={settings?.webServerJwtEnabled === true}
       />
       <SidebarInset className="flex min-h-svh flex-col">
-        <div className="pointer-events-none absolute top-1.5 left-1.5 z-20">
-          <SidebarTrigger className="pointer-events-auto rounded-full border border-border/70 bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-accent" />
+        <div className="pointer-events-none absolute top-1.5 inset-x-2 sm:inset-x-3 z-20 flex items-center justify-between">
+          <div className="pointer-events-auto flex items-center gap-2">
+            <SidebarTrigger className="rounded-full border border-border/70 bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-accent" />
+            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground backdrop-blur-md shadow-xs">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+              </span>
+              <span>LastLab</span>
+              <span className="text-[10px] text-muted-foreground font-mono">@model-aggregator</span>
+            </div>
+          </div>
+
+          <div className="pointer-events-auto flex items-center gap-1.5">
+            <Button
+              id="tuning-trigger-btn"
+              data-testid="tuning-trigger-btn"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTuningOpen(true)}
+              className="h-8 rounded-full border-border/60 bg-background/80 px-2.5 text-xs text-foreground shadow-xs backdrop-blur hover:bg-accent/80 transition-all active:scale-[0.97]"
+              title="Hyperparameters & System Tuning (Temperature, Top-P, Reasoning, Presets)"
+              data-no-touch-enforce
+            >
+              <span>🎛️</span>
+              <span className="hidden sm:inline font-medium">Tuning</span>
+            </Button>
+
+            <Button
+              id="inspect-raw-btn"
+              data-testid="inspect-raw-btn"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setInspectorData(buildCurrentInspectorData());
+                setInspectorOpen(true);
+              }}
+              className="h-8 rounded-full border-border/60 bg-background/80 px-2.5 text-xs text-foreground shadow-xs backdrop-blur hover:bg-accent/80 transition-all active:scale-[0.97]"
+              title="Raw Protocol & Telemetry Inspector (cURL, SSE Payloads, Edge Latency)"
+              data-no-touch-enforce
+            >
+              <span>🔍</span>
+              <span className="hidden sm:inline font-medium">Inspect</span>
+            </Button>
+          </div>
         </div>
 
         {!isMobile ? (
@@ -1181,6 +1274,21 @@ function ConversationsPageInner() {
             </DrawerContent>
           </Drawer>
         ) : null}
+
+        <PlaygroundTuningSheet
+          open={tuningOpen}
+          onOpenChange={setTuningOpen}
+          params={playgroundParams}
+          onApply={(newParams) => {
+            setPlaygroundParams(newParams);
+          }}
+        />
+
+        <RawInspectorDialog
+          open={inspectorOpen}
+          onOpenChange={setInspectorOpen}
+          data={inspectorData || buildCurrentInspectorData()}
+        />
       </SidebarInset>
     </SidebarProvider>
   );

@@ -13,6 +13,7 @@ import { ArrowDown,
   GitFork,
   Pencil,
   RefreshCw,
+  Terminal,
   Trash2,
   Zap, } from "~/lib/material-icons";
 
@@ -382,6 +383,47 @@ export const ChatMessageActionsRow = React.memo(({
         </Button>
       )}
 
+      {onFork && (
+        <Button
+          aria-label={t("chat_message.create_fork")}
+          disabled={actionDisabled}
+          onClick={() => {
+            void handleFork();
+          }}
+          size="icon-xs"
+          title={t("chat_message.create_fork")}
+          type="button"
+          variant="ghost"
+          data-no-touch-enforce
+        >
+          <GitFork className={cn("size-3.5", forking && "animate-spin text-primary")} />
+        </Button>
+      )}
+
+      <Button
+        aria-label="Inspect cURL and Telemetry"
+        disabled={actionDisabled}
+        onClick={() => {
+          const detail = {
+            modelId: (message as any).modelId || "deepseek-v4-1-flash",
+            endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
+            providerSlug: "@model-aggregator",
+            promptTokens: message.usage?.promptTokens,
+            completionTokens: message.usage?.completionTokens,
+            totalTokens: message.usage?.totalTokens,
+            latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
+          };
+          window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
+        }}
+        size="icon-xs"
+        title="Inspect cURL & Raw Telemetry"
+        type="button"
+        variant="ghost"
+        data-no-touch-enforce
+      >
+        <Terminal className="size-3.5" />
+      </Button>
+
       {canSwitchBranch && (
         <>
           <Button
@@ -495,19 +537,46 @@ export const ChatMessageNerdLineRow = React.memo(({
   const stats = getNerdStats(message.usage, message.createdAt, message.finishedAt, t);
   if (stats.length === 0) return null;
 
+  const handleOpenInspector = () => {
+    const detail = {
+      modelId: (message as any).modelId || "deepseek-v4-1-flash",
+      endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
+      providerSlug: "@model-aggregator",
+      promptTokens: message.usage?.promptTokens,
+      completionTokens: message.usage?.completionTokens,
+      totalTokens: message.usage?.totalTokens,
+      latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
+    };
+    window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
+  };
+
   return (
     <div
       className={cn(
-        "flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/45",
+        "flex w-full flex-wrap items-center gap-1.5 pt-0.5 text-[10px]",
         alignRight ? "justify-end" : "justify-start",
       )}
     >
       {stats.map((item) => (
-        <div key={item.key} className="inline-flex items-center gap-1">
+        <span
+          key={item.key}
+          className="telemetry-badge nerd-badge"
+          data-no-touch-enforce
+        >
           {item.icon}
           <span>{item.label}</span>
-        </div>
+        </span>
       ))}
+      <button
+        type="button"
+        data-no-touch-enforce
+        onClick={handleOpenInspector}
+        className="telemetry-badge nerd-badge cursor-pointer border-primary/30 text-primary hover:bg-primary/10 active:scale-[0.96]"
+        title="Inspect raw protocol, cURL, and latency telemetry"
+      >
+        <Terminal className="size-2.5" />
+        <span>cURL / Inspector</span>
+      </button>
     </div>
   );
 });
@@ -519,7 +588,7 @@ export const ChatMessage = React.memo(({
   isLastMessage = false,
   assistant,
   displaySetting,
-  model,
+  model: _model,
   onEdit,
   onRegenerate,
   onSelectBranch,

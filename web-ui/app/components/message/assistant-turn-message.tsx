@@ -134,7 +134,7 @@ export function AssistantTurnMessage({
   onFork?: (messageId: string) => void | Promise<void>;
   onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
 }) {
-  const { t } = useTranslation("message");
+  const { t: _t } = useTranslation("message");
   const reducedMotion = useChatReducedMotion();
   const [timelineOpen, setTimelineOpen] = React.useState(false);
   const [initialExpandedType, setInitialExpandedType] = React.useState<ActivityType | null>(null);

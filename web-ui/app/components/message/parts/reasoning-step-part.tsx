@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Brain, Sparkles } from "~/lib/material-icons";
+import { Sparkles } from "~/lib/material-icons";
 import { useTranslation } from "react-i18next";
 
 import Markdown from "~/components/markdown/markdown";

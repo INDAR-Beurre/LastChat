@@ -85,7 +85,7 @@ mkdir -p "$BUILD_DIR/gen" "$BUILD_DIR/obj" "$BUILD_DIR/dex" "$DIST_DIR"
 
 # Ensure mobile assets are synced with web-ui
 if [ -d "$PROJECT_DIR/web-ui/build/client" ]; then
-    cp -rf "$PROJECT_DIR/web-ui/build/client/"* "$MOBILE_DIR/assets/www/" 2>/dev/null || true
+    rsync -a --delete "$PROJECT_DIR/web-ui/build/client/" "$MOBILE_DIR/assets/www/" 2>/dev/null || cp -rf "$PROJECT_DIR/web-ui/build/client/"* "$MOBILE_DIR/assets/www/"
 fi
 
 echo "[1/6] Compiling Android resources..."

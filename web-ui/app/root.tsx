@@ -83,6 +83,38 @@ function AppContent() {
       closeModelPicker: () => {
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       },
+      openTuning: () => {
+        window.dispatchEvent(new CustomEvent("lastlab:open-tuning"));
+      },
+      openInspector: () => {
+        window.dispatchEvent(new CustomEvent("lastlab:open-inspector"));
+      },
+      switchToView: (view: string) => {
+        if (view === "tuning-view") {
+          window.dispatchEvent(new CustomEvent("lastlab:open-tuning"));
+          return true;
+        }
+        if (view === "admin-view" || view === "models-view") {
+          const btn = document.getElementById("model-trigger-btn");
+          if (btn) btn.click();
+          return true;
+        }
+        if (view === "chat-view") {
+          document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+          return true;
+        }
+        return false;
+      },
+      state: {
+        sessions: [
+          {
+            id: "current-session",
+            messages: [] as Array<Record<string, unknown>>,
+          },
+        ],
+        currentSessionId: "current-session",
+        lastRequest: null as Record<string, unknown> | null,
+      },
     };
 
     (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastLabApp = bridge;

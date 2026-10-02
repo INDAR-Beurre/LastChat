@@ -184,7 +184,33 @@ async function runPreviewVerification() {
   // Check 8: Test Scenario - Inject Reasoning & Kotlin Snippet
   console.log("Testing Scenario action: inject-reasoning...");
   await evalCode("document.querySelector('[data-action=\"inject-reasoning\"]').click()");
-  await new Promise(r => setTimeout(r, 600));
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 300));
+    const generating = await evalCode(`(() => {
+      const doc = document.getElementById('mobile-iframe')?.contentDocument;
+      const stopBtn = doc?.querySelector('button#send-message-btn.bg-destructive') || doc?.querySelector('svg.lucide-square');
+      return !!stopBtn;
+    })()`);
+    if (!generating && i > 3) {
+      console.log(`Simulator stream generation completed in ~${(i + 1) * 300}ms`);
+      break;
+    }
+  }
+
+  // Ensure code block and telemetry inside simulated phone are scrolled into clear view
+  await evalCode(`(() => {
+    const doc = document.getElementById('mobile-iframe')?.contentDocument;
+    if (doc) {
+      const codeBlock = doc.querySelector('.code-block-container') || doc.querySelector('pre') || doc.querySelector('.telemetry-badge');
+      if (codeBlock) {
+        codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
+      } else {
+        const assistant = doc.querySelector('[data-message-role="assistant"]') || doc.querySelectorAll('.chat-turn')[1];
+        assistant?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    }
+  })()`);
+  await new Promise(r => setTimeout(r, 400));
 
   // Check 9: Verify Console Stream recorded logs
   const logRows = await evalCode("document.querySelectorAll('#console-logs-list .console-log-row').length");

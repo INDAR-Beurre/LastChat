@@ -76,6 +76,7 @@ export interface ChatInputProps {
   onCancelEdit?: () => void;
   onSuggestionClick?: (suggestion: string) => void;
   onExportConversation?: (includeReasoning: boolean) => void;
+  onOpenTuning?: () => void;
   className?: string;
 }
 
@@ -214,6 +215,7 @@ function ChatInputInner({
   onCancelEdit,
   onSuggestionClick,
   onExportConversation,
+  onOpenTuning,
   className,
 }: ChatInputProps) {
   const { t } = useTranslation("input");
@@ -1048,10 +1050,29 @@ function ChatInputInner({
                     disabled={!canUseQuickMessage}
                     onSelect={handleQuickMessageSelect}
                   />
+                  <Button
+                    id="composer-tuning-btn"
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={!canSwitchModel}
+                    onClick={() => {
+                      if (onOpenTuning) onOpenTuning();
+                      else window.dispatchEvent(new CustomEvent("lastlab:open-tuning"));
+                    }}
+                    className={cn("size-9 rounded-full", COMPOSER_CONTROL_BUTTON_CLASSNAME)}
+                    title="Hyperparameters & Tuning (Temperature, Top-P, Reasoning, Presets)"
+                    data-no-touch-enforce
+                  >
+                    <span className="text-sm">🎛️</span>
+                  </Button>
                 </>
               ) : null}
             </div>
             <Button
+              id="send-message-btn"
+              data-testid="send-message-btn"
+              type="submit"
               onClick={() => {
                 void handlePrimaryAction();
               }}

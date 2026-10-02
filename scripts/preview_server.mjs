@@ -133,6 +133,27 @@ function broadcastSettings() {
   }
 }
 
+let streamSequence = 1;
+function broadcastNodeUpdate(convId, node, nodeIndex, isGenerating) {
+  const clients = conversationSseClients.get(convId);
+  if (!clients || clients.size === 0) return;
+  const now = Date.now();
+  const payload = `event: node_update\ndata: ${JSON.stringify({
+    type: "node_update",
+    seq: streamSequence++,
+    conversationId: convId,
+    nodeId: node.id,
+    nodeIndex: nodeIndex,
+    node: node,
+    updateAt: now,
+    isGenerating: isGenerating,
+    serverTime: now
+  })}\n\n`;
+  for (const c of clients) {
+    try { c.write(payload); } catch { /* ignore */ }
+  }
+}
+
 // Discover Network IP addresses
 function getNetworkAddresses() {
   const nets = os.networkInterfaces();
@@ -409,7 +430,7 @@ async function handleRequest(req, res) {
       id: "node-" + userMsgId,
       messages: [{
         id: userMsgId,
-        role: "user",
+        role: "USER",
         parts: body.parts || [{ type: "text", text: userText }],
         createdAt: new Date().toISOString()
       }],
@@ -423,7 +444,7 @@ async function handleRequest(req, res) {
       id: "node-" + asstMsgId,
       messages: [{
         id: asstMsgId,
-        role: "assistant",
+        role: "ASSISTANT",
         parts: [
           { type: "reasoning", reasoning: `Analyzing query on Relay Gateway (@model-aggregator)... Routing to ${currentModel}.` },
           { type: "text", text: "" }
@@ -436,6 +457,9 @@ async function handleRequest(req, res) {
     conv.messages.push(asstNode);
     conv.isGenerating = true;
     conv.updateAt = Date.now();
+
+    broadcastNodeUpdate(id, userNode, conv.messages.length - 2, true);
+    broadcastNodeUpdate(id, asstNode, conv.messages.length - 1, true);
 
     // Trigger asynchronous stream generator
     generateAssistantResponse(id, asstNode, userText, currentModel);
@@ -459,6 +483,16 @@ async function handleRequest(req, res) {
     }
     conversationSseClients.get(id).add(res);
 
+    const conv = conversations.get(id);
+    if (conv) {
+      res.write(`event: snapshot\ndata: ${JSON.stringify({
+        type: "snapshot",
+        seq: streamSequence++,
+        conversation: conv,
+        serverTime: Date.now()
+      })}\n\n`);
+    }
+
     req.on("close", () => {
       conversationSseClients.get(id)?.delete(res);
     });
@@ -469,7 +503,14 @@ async function handleRequest(req, res) {
   if (stopMatch && req.method === "POST") {
     const id = stopMatch[1];
     const conv = conversations.get(id);
-    if (conv) conv.isGenerating = false;
+    if (conv) {
+      conv.isGenerating = false;
+      const lastIndex = conv.messages.length - 1;
+      const lastNode = conv.messages[lastIndex];
+      if (lastNode) {
+        broadcastNodeUpdate(id, lastNode, lastIndex, false);
+      }
+    }
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok" }));
     return;
@@ -541,19 +582,12 @@ async function handleRequest(req, res) {
 
 // Background Assistant Stream Generator
 async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
-  const clients = conversationSseClients.get(convId);
   const asstMsg = asstNode.messages[0];
 
   function emitNodeUpdate() {
-    if (!clients) return;
-    const payload = `event: node_update\ndata: ${JSON.stringify({
-      conversationId: convId,
-      node: asstNode,
-      timestamp: Date.now()
-    })}\n\n`;
-    for (const c of clients) {
-      try { c.write(payload); } catch { /* ignore */ }
-    }
+    const conv = conversations.get(convId);
+    const nodeIndex = conv ? conv.messages.findIndex(n => n.id === asstNode.id) : 1;
+    broadcastNodeUpdate(convId, asstNode, nodeIndex >= 0 ? nodeIndex : 1, conv ? conv.isGenerating : false);
   }
 
   try {
@@ -569,7 +603,7 @@ async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
         messages: [{ role: "user", content: prompt }],
         stream: true
       }),
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(400)
     }).catch(() => null);
 
     if (upstreamRes && upstreamRes.ok && upstreamRes.body) {
@@ -613,7 +647,7 @@ async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
       ];
 
       for (const chunk of reasoningChunks) {
-        await new Promise(r => setTimeout(r, 120));
+        await new Promise(r => setTimeout(r, 60));
         asstMsg.parts[0].reasoning += chunk;
         emitNodeUpdate();
       }
@@ -639,7 +673,7 @@ async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
       ];
 
       for (const chunk of textChunks) {
-        await new Promise(r => setTimeout(r, 90));
+        await new Promise(r => setTimeout(r, 45));
         asstMsg.parts[1].text += chunk;
         emitNodeUpdate();
       }
@@ -651,6 +685,12 @@ async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
     const conv = conversations.get(convId);
     if (conv) conv.isGenerating = false;
     asstMsg.finishedAt = new Date().toISOString();
+    asstMsg.usage = {
+      promptTokens: 42,
+      completionTokens: 286,
+      cachedTokens: 0,
+      totalTokens: 328,
+    };
     emitNodeUpdate();
   }
 }
