@@ -7,10 +7,10 @@
 
 <br>
 
-[![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024--34)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](dist/lastlab.apk)
-[![APK Size](https://img.shields.io/badge/APK%20Size-2.0%20MB-06B6D4?style=for-the-badge&logo=speedtest&logoColor=white)](dist/lastlab.apk)
-[![Build Speed](https://img.shields.io/badge/Build%20Time-~0.7s-10B981?style=for-the-badge&logo=fastapi&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
-[![Memory Peak](https://img.shields.io/badge/Peak%20RAM-%3C%20150MB-F59E0B?style=for-the-badge&logo=ram&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
+[![Android](https://img.shields.io/badge/Android-9.0%2B%20(API%2028--36)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](dist/lastlab.apk)
+[![App](https://img.shields.io/badge/Architecture-Kotlin%20%2B%20Compose-4285F4?style=for-the-badge&logo=kotlin&logoColor=white)](dist/lastlab.apk)
+[![Build Toolchain](https://img.shields.io/badge/Build%20Toolchain-Headless%20Gradle%20CLI-10B981?style=for-the-badge&logo=gradle&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
+[![Memory Tuned](https://img.shields.io/badge/Low--Spec%20PC-Optimized-F59E0B?style=for-the-badge&logo=speedtest&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
 [![Provider Gateway](https://img.shields.io/badge/Gateway-@model--aggregator-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](#-relay-gateway-architecture)
 [![No Android Studio](https://img.shields.io/badge/Android%20Studio-NOT%20REQUIRED-EF4444?style=for-the-badge&logo=googleplay&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
 
@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="dist/lastlab.apk">
-    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk%20(2.0%20MB)-0284c7?style=for-the-badge" alt="Download APK" />
+    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk-0284c7?style=for-the-badge" alt="Download APK" />
   </a>
   &nbsp;&nbsp;
   <a href="#-preview-anywhere-mobile-studio-simulator">

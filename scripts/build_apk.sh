@@ -2,8 +2,10 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# LastLab Mobile — Lightweight APK Builder
-# Designed for low-spec PCs: 0 heavy daemons, ~150MB RAM max, builds in 2s.
+# LastLab Mobile — APK Builder
+# Designed for low-spec PCs: supports both:
+# 1. Zero-daemon lightweight APK builder (2.0 MB, <150MB RAM, ~0.7s)
+# 2. Authentic full Gradle CLI builder (--full / -f)
 # -----------------------------------------------------------------------------
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +14,14 @@ MOBILE_DIR="$PROJECT_DIR/mobile"
 BUILD_DIR="$MOBILE_DIR/build"
 DIST_DIR="$PROJECT_DIR/dist"
 
-echo "=== LastLab Mobile APK Build ==="
+MODE="lightweight"
+for arg in "$@"; do
+    if [ "$arg" = "--full" ] || [ "$arg" = "-f" ]; then
+        MODE="full"
+    fi
+done
+
+echo "=== LastLab Mobile APK Build [Mode: $MODE] ==="
 echo "Project Root: $PROJECT_DIR"
 
 # 1. Locate JDK (Java 17+)
@@ -30,10 +39,33 @@ fi
 JAVA="$JAVA_HOME/bin/java"
 JAVAC="$JAVA_HOME/bin/javac"
 JAR="$JAVA_HOME/bin/jar"
+export JAVA_HOME
+export PATH="$JAVA_HOME/bin:$PATH"
 
 echo "Using Java: $("$JAVA" -version 2>&1 | head -n 1)"
 
-# 2. Verify Toolchain
+mkdir -p "$DIST_DIR"
+
+if [ "$MODE" = "full" ]; then
+    # Full Gradle CLI build
+    if [ -d "/home/alex/android-sdk" ]; then
+        export ANDROID_HOME="/home/alex/android-sdk"
+    fi
+    echo "[1/2] Building authentic full-engine LastLab APK with Gradle..."
+    cd "$PROJECT_DIR"
+    ./gradlew :app:assembleStableRelease \
+        -Plastchat.release.minify=false \
+        --max-workers=2 \
+        --no-daemon
+    
+    echo "[2/2] Generating checksums for generated APKs..."
+    find "$PROJECT_DIR/app/build/outputs/apk/stable/release" -name "*.apk" -exec sha256sum {} + > "$DIST_DIR/full-release-apks.sha256"
+    echo "Full release APKs built in app/build/outputs/apk/stable/release/:"
+    ls -lh "$PROJECT_DIR/app/build/outputs/apk/stable/release/"*.apk
+    exit 0
+fi
+
+# Default lightweight APK build (<150MB RAM, ~0.7s)
 AAPT2="$TOOLCHAIN_DIR/aapt2"
 R8_JAR="$TOOLCHAIN_DIR/r8.jar"
 ANDROID_JAR="$TOOLCHAIN_DIR/android.jar"
@@ -48,15 +80,17 @@ done
 
 chmod +x "$AAPT2"
 
-# 3. Clean & Prepare Build Directories
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/gen" "$BUILD_DIR/obj" "$BUILD_DIR/dex" "$DIST_DIR"
 
-# 4. Compile Android Resources with AAPT2
+# Ensure mobile assets are synced with web-ui
+if [ -d "$PROJECT_DIR/web-ui/build/client" ]; then
+    cp -rf "$PROJECT_DIR/web-ui/build/client/"* "$MOBILE_DIR/assets/www/" 2>/dev/null || true
+fi
+
 echo "[1/6] Compiling Android resources..."
 "$AAPT2" compile --dir "$MOBILE_DIR/res" -o "$BUILD_DIR/compiled_res.zip"
 
-# 5. Link Resources, Assets & Manifest into Base APK
 echo "[2/6] Linking APK with AAPT2 & bundling assets..."
 "$AAPT2" link \
     -I "$ANDROID_JAR" \
@@ -67,14 +101,12 @@ echo "[2/6] Linking APK with AAPT2 & bundling assets..."
     "$BUILD_DIR/compiled_res.zip" \
     --auto-add-overlay
 
-# 6. Compile Java Source Code
 echo "[3/6] Compiling Java classes with javac..."
 "$JAVAC" -cp "$ANDROID_JAR" \
     -d "$BUILD_DIR/obj" \
     $(find "$MOBILE_DIR/src" -name "*.java") \
     $(find "$BUILD_DIR/gen" -name "*.java")
 
-# 7. Convert Java Bytecode to Dalvik DEX via D8
 echo "[4/6] Dexing bytecode with D8..."
 CLASS_FILES=$(find "$BUILD_DIR/obj" -name "*.class")
 "$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 \
@@ -82,23 +114,19 @@ CLASS_FILES=$(find "$BUILD_DIR/obj" -name "*.class")
     --lib "$ANDROID_JAR" \
     --output "$BUILD_DIR/dex"
 
-# 8. Package classes.dex into APK
 echo "[5/6] Packaging DEX into APK..."
 "$JAR" -uf "$BUILD_DIR/base.apk" -C "$BUILD_DIR/dex" classes.dex
 
-# 9. Zipalign and Cryptographically Sign APK (v1, v2, v3)
 echo "[6/6] Aligning & signing APK..."
 "$JAVA" -jar "$SIGNER_JAR" \
     --apks "$BUILD_DIR/base.apk" \
     -o "$DIST_DIR"
 
-# Standardize output name
 SIGNED_APK=$(find "$DIST_DIR" -name "base-aligned-*.apk" | head -n 1)
 FINAL_APK="$DIST_DIR/lastlab.apk"
 mv -f "$SIGNED_APK" "$FINAL_APK"
 cp -f "$FINAL_APK" "$DIST_DIR/lastchat-playground.apk"
 
-# Generate checksums
 (cd "$DIST_DIR" && sha256sum "$(basename "$FINAL_APK")" > "lastlab.apk.sha256")
 (cd "$DIST_DIR" && sha256sum "lastchat-playground.apk" > "lastchat-playground.apk.sha256")
 
@@ -108,5 +136,4 @@ echo "Output APK: $FINAL_APK"
 echo "Size: $(du -h "$FINAL_APK" | cut -f1)"
 echo "================================================="
 
-# Dump badging info
 "$AAPT2" dump badging "$FINAL_APK" | head -n 15 || true

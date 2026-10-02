@@ -141,7 +141,7 @@ fun LastChatAboutContent(
         }
         Spacer(Modifier.height(32.dp))
         Text(
-            text = "Based on RikkaHub by rerere",
+            text = "LastLab • forked from LastChat",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             textAlign = TextAlign.Center,

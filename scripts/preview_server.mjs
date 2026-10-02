@@ -18,7 +18,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_DIR = path.resolve(__dirname, "..");
 const PREVIEW_DIR = path.join(PROJECT_DIR, "preview");
-const WWW_DIR = path.join(PROJECT_DIR, "mobile/assets/www");
+const WWW_DIR = fs.existsSync(path.join(PROJECT_DIR, "web-ui/build/client/index.html"))
+  ? path.join(PROJECT_DIR, "web-ui/build/client")
+  : path.join(PROJECT_DIR, "mobile/assets/www");
 const DIST_DIR = path.join(PROJECT_DIR, "dist");
 
 // Parse CLI flags

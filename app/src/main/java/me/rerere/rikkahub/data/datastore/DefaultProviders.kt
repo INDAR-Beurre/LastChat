@@ -1,7 +1,5 @@
 package me.rerere.rikkahub.data.datastore
 
-import me.rerere.ai.provider.ProviderSetting
-
 import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ModelAbility
 import me.rerere.ai.provider.ModelType

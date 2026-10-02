@@ -77,6 +77,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
@@ -988,6 +989,7 @@ private fun ModelItem(
                 ) {
                     ModelModalityTag(model = model)
                     ModelAbilityTag(model = model)
+                    ModelContextTag(model = model)
                 }
             },
             tail = tail,
@@ -1058,6 +1060,8 @@ private fun ModelItem(
                             ModelModalityTag(model = model)
 
                             ModelAbilityTag(model = model)
+
+                            ModelContextTag(model = model)
                         }
                     }
                     tail()
@@ -1163,6 +1167,30 @@ fun ModelAbilityTag(model: Model) {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ModelContextTag(model: Model) {
+    val ctx = model.contextWindowTokens ?: model.maxInputTokens
+    if (ctx != null && ctx > 0) {
+        val label = if (ctx >= 1_000_000) "${ctx / 1_000_000}M ctx" else "${ctx / 1_000}k ctx"
+        Tag(type = TagType.DEFAULT) {
+            Text(
+                text = label,
+                style = LocalTextStyle.current.copy(fontSize = 10.sp),
+            )
+        }
+    }
+    val out = model.maxOutputTokens
+    if (out != null && out > 0) {
+        val label = if (out >= 1_000_000) "${out / 1_000_000}M out" else "${out / 1_000}k out"
+        Tag(type = TagType.INFO) {
+            Text(
+                text = label,
+                style = LocalTextStyle.current.copy(fontSize = 10.sp),
+            )
         }
     }
 }

@@ -68,7 +68,7 @@ fun SettingAboutPage() {
                     context.startActivity(
                         Intent(
                             Intent.ACTION_VIEW,
-                            Uri.parse("https://github.com/Cocolalilal/LastChat"),
+                            Uri.parse("https://github.com/INDAR-Beurre/LastChat"),
                         ),
                     )
                 },
