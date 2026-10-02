@@ -119,6 +119,14 @@ function handleRequest(req, res) {
   if (pathname.startsWith("/mobile/")) {
     const rel = pathname.substring("/mobile/".length);
     filePath = path.join(WWW_DIR, rel === "" ? "index.html" : rel);
+
+    // Fallback: Check mobile project root (e.g. /mobile/res/...)
+    if (!fs.existsSync(filePath)) {
+      const mobileFallback = path.join(PROJECT_DIR, "mobile", rel);
+      if (fs.existsSync(mobileFallback)) {
+        filePath = mobileFallback;
+      }
+    }
   } else if (pathname.startsWith("/dist/")) {
     const rel = pathname.substring("/dist/".length);
     filePath = path.join(DIST_DIR, rel);
@@ -142,12 +150,17 @@ function handleRequest(req, res) {
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
     const stat = fs.statSync(filePath);
 
-    res.writeHead(200, {
+    const headers = {
       "Content-Type": contentType,
       "Content-Length": stat.size,
       "Cache-Control": ext === ".apk" ? "no-cache" : "public, max-age=60"
-    });
+    };
 
+    if (ext === ".apk") {
+      headers["Content-Disposition"] = 'attachment; filename="lastchat-playground.apk"';
+    }
+
+    res.writeHead(200, headers);
     fs.createReadStream(filePath).pipe(res);
   } else {
     res.writeHead(404, { "Content-Type": "text/plain" });

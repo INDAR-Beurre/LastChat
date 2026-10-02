@@ -1,4 +1,4 @@
-// Minimal standalone QR Code Generator (Type 1-10, alphanumeric and byte mode)
+// Minimal standalone QR Code Generator (Type 1-10, byte mode)
 // Generates SVG representation with zero dependencies
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -8,7 +8,7 @@
   } else {
     root.QRCodeSVG = factory();
   }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof globalThis !== 'undefined' ? globalThis : typeof self !== 'undefined' ? self : this, function () {
 
   // Minimal standard QR Generator
   function QRCode(text, options) {
@@ -88,7 +88,15 @@
     // 5
     [5, 1, 134, 108], [5, 0, 134, 86], [5, 3, 134, 62], [5, 2, 134, 46],
     // 6
-    [6, 1, 172, 136], [6, 0, 172, 108], [6, 3, 172, 76], [6, 2, 172, 60]
+    [6, 1, 172, 136], [6, 0, 172, 108], [6, 3, 172, 76], [6, 2, 172, 60],
+    // 7
+    [7, 1, 196, 156], [7, 0, 196, 124], [7, 3, 196, 88], [7, 2, 196, 66],
+    // 8
+    [8, 1, 242, 194], [8, 0, 242, 154], [8, 3, 242, 110], [8, 2, 242, 86],
+    // 9
+    [9, 1, 292, 232], [9, 0, 292, 182], [9, 3, 292, 132], [9, 2, 292, 100],
+    // 10
+    [10, 1, 346, 274], [10, 0, 346, 216], [10, 3, 346, 154], [10, 2, 346, 122]
   ];
 
   function getRSBlocks(typeNumber, errorCorrectLevel) {
@@ -100,7 +108,7 @@
         };
       }
     }
-    return { totalCount: 134, dataCount: 108 };
+    return { totalCount: 346, dataCount: 274 };
   }
 
   function createData(typeNumber, errorCorrectLevel, text) {
@@ -138,10 +146,19 @@
     return result;
   }
 
+  function determineTypeNumber(textLength) {
+    const needed = textLength + 2;
+    for (let t = 1; t <= 10; t++) {
+      const b = getRSBlocks(t, 1);
+      if (b && b.dataCount >= needed) {
+        return Math.max(t, 3); // Minimum type 3 for crisp standard rendering
+      }
+    }
+    return 10;
+  }
+
   function generateMatrix(text) {
-    let typeNumber = 3;
-    if (text.length > 32) typeNumber = 5;
-    if (text.length > 70) typeNumber = 6;
+    const typeNumber = determineTypeNumber(text.length);
     const moduleCount = typeNumber * 4 + 17;
     const matrix = [];
     for (let r = 0; r < moduleCount; r++) {

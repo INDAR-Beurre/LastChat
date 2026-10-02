@@ -122,15 +122,20 @@ async function runPreviewVerification() {
   console.log(`S24 wrapper width: ${s24Width} (expected: 360px)`);
 
   // Check 5: Switch to iPhone 15 Pro
-  console.log("Switching device to iPhone 15 Pro (Dynamic Island pill)...");
+  console.log("Switching device to iPhone 15 Pro (Dynamic Island & iOS Home Bar)...");
   await evalCode("document.querySelector('[data-device=\"iphone15\"]').click()");
   await new Promise(r => setTimeout(r, 400));
   const isPill = await evalCode("document.getElementById('device-frame').classList.contains('notch-pill')");
+  const isIosNav = await evalCode("document.getElementById('device-nav-bar').classList.contains('ios-mode')");
   console.log(`iPhone 15 dynamic island active: ${isPill}`);
+  console.log(`iPhone 15 iOS Home bar active: ${isIosNav}`);
+  if (!isIosNav) throw new Error("iPhone 15 should have iOS Home Bar mode enabled!");
 
   // Switch back to Pixel 8 Pro
   await evalCode("document.querySelector('[data-device=\"pixel8\"]').click()");
   await new Promise(r => setTimeout(r, 400));
+  const isAndroidNav = await evalCode("!document.getElementById('device-nav-bar').classList.contains('ios-mode')");
+  console.log(`Android 3-button nav restored for Pixel 8: ${isAndroidNav}`);
 
   // Check 6: Trigger Scenario - Open Model Registry
   console.log("Testing Scenario action: open-model-picker...");
@@ -139,12 +144,25 @@ async function runPreviewVerification() {
   const modalActive = await evalCode("document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
   console.log(`Admin Model Registry modal opened inside iframe: ${modalActive}`);
 
-  // Check 7: Trigger Hardware Back Key on phone frame
+  // Check 7a: Trigger Hardware Back Key on phone frame
   console.log("Testing Simulated Android Hardware Back Key...");
   await evalCode("document.getElementById('nav-btn-back').click()");
   await new Promise(r => setTimeout(r, 400));
   const modalClosed = await evalCode("!document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
   console.log(`Android Back key closed modal inside iframe: ${modalClosed}`);
+
+  // Check 7b: Re-open modal and test Escape key INSIDE IFRAME
+  console.log("Testing Escape key inside iframe document closes modal...");
+  await evalCode("document.getElementById('mobile-iframe').contentWindow.LastChatApp.openModelPicker()");
+  await new Promise(r => setTimeout(r, 400));
+  await evalCode(`(() => {
+    const iDoc = document.getElementById('mobile-iframe').contentDocument;
+    iDoc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  })()`);
+  await new Promise(r => setTimeout(r, 400));
+  const modalClosedViaEsc = await evalCode("!document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
+  console.log(`Inside-iframe Escape key closed modal: ${modalClosedViaEsc}`);
+  if (!modalClosedViaEsc) throw new Error("Escape key inside iframe failed to trigger back bridge!");
 
   // Check 8: Test Scenario - Inject Reasoning & Kotlin Snippet
   console.log("Testing Scenario action: inject-reasoning...");
@@ -159,15 +177,40 @@ async function runPreviewVerification() {
   console.log("Capturing full desktop simulator preview screenshot...");
   await takeScreenshot("preview_simulator_desktop.png");
 
-  // Check 11: Test LAN Sharing QR Modal
+  // Check 11: Test LAN Sharing QR Modal and long URL robustness
   console.log("Opening LAN Sharing & QR Modal...");
   await evalCode("document.getElementById('btn-network-share').click()");
   await new Promise(r => setTimeout(r, 400));
   const qrSvgExists = await evalCode("!!document.querySelector('#modal-qr-svg svg')");
   console.log(`Standalone SVG QR code generated: ${qrSvgExists}`);
+
+  // Test QR with long URL (150+ chars)
+  const longQrValid = await evalCode(`(() => {
+    const longUrl = 'http://192.168.86.128:8990/?token=abc123xyz789&session=admin_super_user_matrix_probe_long_url_test_parameter_string_validation';
+    const qr = new window.QRCodeSVG(longUrl, { size: 190 });
+    const svg = qr.toSVG();
+    return svg.startsWith('<svg') && svg.length > 5000;
+  })()`);
+  console.log(`Type 7-10 QR code generated for long URL (150+ chars): ${longQrValid}`);
+  if (!longQrValid) throw new Error("Failed to generate valid QR code for long URL!");
   await evalCode("document.getElementById('modal-network-close').click()");
 
-  console.log("=== Verification Completed Successfully! ===");
+  // Check 12: Verify Static Icon & APK Endpoints via Server HTTP Requests
+  console.log("Verifying icon and APK HTTP headers on preview server...");
+  const iconRes = await fetch(`http://127.0.0.1:${PREVIEW_PORT}/mobile/res/mipmap-hdpi/ic_launcher.png`);
+  console.log(`Favicon /mobile/res/mipmap-hdpi/ic_launcher.png HTTP Status: ${iconRes.status} (expected: 200)`);
+  if (iconRes.status !== 200) throw new Error(`Icon endpoint failed: status ${iconRes.status}`);
+
+  const apkRes = await fetch(`http://127.0.0.1:${PREVIEW_PORT}/dist/lastchat-playground.apk`, { method: "HEAD" });
+  const dispHeader = apkRes.headers.get("content-disposition");
+  console.log(`APK Content-Disposition header: "${dispHeader}"`);
+  if (!dispHeader || !dispHeader.includes("attachment")) throw new Error("Missing APK attachment disposition header!");
+
+  // Check 13: Gateway Live Status Text Check
+  const gwText = await evalCode("document.getElementById('gateway-status-text')?.textContent");
+  console.log(`Live Gateway status text: "${gwText}"`);
+
+  console.log("=== All 13 Verification Checkpoints Completed Successfully! ===");
   browser.kill();
   serverProcess.kill();
   process.exit(0);

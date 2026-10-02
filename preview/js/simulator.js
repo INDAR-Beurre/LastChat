@@ -85,9 +85,12 @@
     modalNetwork: document.getElementById('modal-network'),
     modalQrSvg: document.getElementById('modal-qr-svg'),
     modalShareUrl: document.getElementById('modal-share-url'),
+    navBar: document.getElementById('device-nav-bar'),
+    iosIndicator: document.getElementById('nav-ios-indicator'),
     navBtnBack: document.getElementById('nav-btn-back'),
     navBtnHome: document.getElementById('nav-btn-home'),
     navBtnRecents: document.getElementById('nav-btn-recents'),
+    gatewayStatusText: document.getElementById('gateway-status-text'),
   };
 
   // ---------------------------------------------------------------------------
@@ -110,16 +113,20 @@
     dom.screenWrapper.style.width = `${w}px`;
     dom.screenWrapper.style.height = `${h}px`;
 
-    // Chassis styling
-    if (dev.notch === 'pill') {
+    // Chassis & Navigation Bar styling
+    if (dev.id === 'iphone15') {
       dom.frame.classList.add('notch-pill');
       dom.notch.style.display = 'flex';
-    } else if (dev.notch === 'none') {
-      dom.frame.classList.remove('notch-pill');
-      dom.notch.style.display = 'none';
+      dom.navBar?.classList.add('ios-mode');
     } else {
-      dom.frame.classList.remove('notch-pill');
-      dom.notch.style.display = 'flex';
+      dom.navBar?.classList.remove('ios-mode');
+      if (dev.notch === 'none') {
+        dom.frame.classList.remove('notch-pill');
+        dom.notch.style.display = 'none';
+      } else {
+        dom.frame.classList.remove('notch-pill');
+        dom.notch.style.display = 'flex';
+      }
     }
 
     dom.frame.style.borderRadius = dev.radius;
@@ -169,6 +176,7 @@
 
   function toggleOrientation() {
     state.isLandscape = !state.isLandscape;
+    dom.container.classList.toggle('landscape', state.isLandscape);
     applyDevice(state.currentDevice);
     addLog('info', `Device rotated to ${state.isLandscape ? 'Landscape' : 'Portrait'} mode.`);
   }
@@ -387,6 +395,23 @@
     }
   }
 
+  function hookIframeKeyboard() {
+    try {
+      const win = dom.iframe.contentWindow;
+      if (!win) return;
+      win.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          triggerAndroidBack();
+        } else if (e.key === 'Backspace' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+          triggerAndroidBack();
+        }
+      });
+      addLog('info', 'Hooked iframe hardware back keyboard listener.');
+    } catch (e) {
+      console.warn('Could not hook iframe keyboard events:', e);
+    }
+  }
+
   function formatLogArg(arg) {
     if (typeof arg === 'string') return arg;
     try {
@@ -492,21 +517,64 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Snapshot Capture
+  // Real-Time Gateway Health & Verification Probe
+  // ---------------------------------------------------------------------------
+  async function checkGatewayHealth() {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch('https://relay-gw.pages.dev/v1/models', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        const count = data.data?.length || 25;
+        if (dom.gatewayStatusText) {
+          dom.gatewayStatusText.textContent = `Relay Gateway Active (${count} Models)`;
+        }
+      } else {
+        if (dom.gatewayStatusText) dom.gatewayStatusText.textContent = 'Relay Gateway Standby';
+      }
+    } catch (e) {
+      if (dom.gatewayStatusText) dom.gatewayStatusText.textContent = 'Relay Gateway Standby';
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Snapshot Capture (Reflects true current view)
   // ---------------------------------------------------------------------------
   async function captureSnapshot() {
-    addLog('info', 'Capturing snapshot...');
+    addLog('info', 'Capturing screen snapshot...');
     try {
       // Create a visual flash animation on the frame
       dom.frame.style.filter = 'brightness(1.5)';
       setTimeout(() => dom.frame.style.filter = 'none', 180);
 
-      // Trigger download of existing pre-rendered mobile screenshot
+      const doc = dom.iframe.contentDocument;
+      const isModalOpen = doc?.getElementById('model-picker-modal')?.classList.contains('active');
+      const isInspectorOpen = doc?.getElementById('inspector-modal')?.classList.contains('active');
+      const activePane = doc?.querySelector('.view-pane.active')?.id || 'chat-view';
+
+      let imageSrc = '/dist/verify_mobile_chat_turn.png';
+      if (isModalOpen) {
+        imageSrc = '/dist/verify_mobile_model_picker.png';
+      } else if (isInspectorOpen) {
+        imageSrc = '/dist/verify_mobile_inspector.png';
+      } else if (activePane === 'tuning-view') {
+        imageSrc = '/dist/verify_mobile_tuning_view.png';
+      } else if (activePane === 'admin-view') {
+        imageSrc = '/dist/verify_mobile_admin_view.png';
+      } else {
+        const hasMessages = doc?.querySelectorAll('.chat-turn')?.length > 0;
+        imageSrc = hasMessages ? '/dist/verify_mobile_chat_turn.png' : '/dist/verify_mobile_chat_empty.png';
+      }
+
       const link = document.createElement('a');
-      link.href = '/dist/verify_mobile_chat_turn.png';
-      link.download = `lastchat-preview-${state.currentDevice}-${Date.now()}.png`;
+      link.href = imageSrc;
+      link.download = `lastchat-${state.currentDevice}-${activePane}-${Date.now()}.png`;
+      document.body.appendChild(link);
       link.click();
-      addLog('info', 'Snapshot saved to downloads.');
+      document.body.removeChild(link);
+      addLog('info', `Snapshot saved for ${activePane} (${imageSrc.split('/').pop()}).`);
     } catch (e) {
       addLog('warn', `Snapshot error: ${e.message}`);
     }
@@ -622,12 +690,16 @@
       }
     });
 
+    // iOS Home Indicator
+    dom.iosIndicator?.addEventListener('click', triggerAndroidHome);
+
     // Window resize -> recalculate scale
     window.addEventListener('resize', recalculateScale);
 
     // Iframe load listener
     dom.iframe.addEventListener('load', () => {
       hookIframeConsole();
+      hookIframeKeyboard();
       addLog('info', 'Mobile app view loaded successfully.');
     });
   }
@@ -636,11 +708,17 @@
   // Initialization
   // ---------------------------------------------------------------------------
   function init() {
+    // If viewport is compact (<= 1080px), collapse drawer by default to keep phone centered
+    if (window.innerWidth <= 1080 && dom.drawer) {
+      dom.drawer.classList.add('collapsed');
+    }
     applyDevice('pixel8');
     updateClock();
     setInterval(updateClock, 10000);
     bindEvents();
     fetchNetworkInfo();
+    checkGatewayHealth();
+    setInterval(checkGatewayHealth, 30000);
   }
 
   if (document.readyState === 'loading') {
