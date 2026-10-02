@@ -1,5 +1,5 @@
 /**
- * LastChat Playground Mobile — Application Engine
+ * LastLab Mobile — Application Engine
  * Optimized for Mobile WebView & Responsive Handhelds
  * Exclusively powered by @model-aggregator (Relay Gateway)
  */
@@ -148,16 +148,16 @@
   // State Management & Local Storage Keys
   // ---------------------------------------------------------------------------
   const STORAGE_KEYS = {
-    SESSIONS: 'lastchat_playground_sessions',
-    CURRENT_SESSION: 'lastchat_current_session_id',
-    TUNING: 'lastchat_tuning_settings',
-    ADMIN: 'lastchat_admin_config',
-    CURRENT_MODEL: 'lastchat_selected_model',
-    PINNED_MODELS: 'lastchat_pinned_models',
+    SESSIONS: 'lastlab_sessions',
+    CURRENT_SESSION: 'lastlab_current_session_id',
+    TUNING: 'lastlab_tuning_settings',
+    ADMIN: 'lastlab_admin_config',
+    CURRENT_MODEL: 'lastlab_selected_model',
+    PINNED_MODELS: 'lastlab_pinned_models',
   };
 
   const DEFAULT_TUNING = {
-    systemPrompt: 'You are LastChat Assistant, an expert, thoughtful, and highly capable AI. Provide thorough, precise, and well-structured answers.',
+    systemPrompt: 'You are LastLab Assistant, an expert, thoughtful, and highly capable AI. Provide thorough, precise, and well-structured answers.',
     temperature: 0.70,
     topP: 1.00,
     maxTokens: 4096,
@@ -168,7 +168,7 @@
   };
 
   const SYSTEM_PRESETS = {
-    default: 'You are LastChat Assistant, an expert, thoughtful, and highly capable AI. Provide thorough, precise, and well-structured answers.',
+    default: 'You are LastLab Assistant, an expert, thoughtful, and highly capable AI. Provide thorough, precise, and well-structured answers.',
     architect: 'You are a Principal Software Architect and Senior Systems Engineer. Write clean, robust, idiomatic, and highly optimized code with comprehensive design explanations.',
     reasoner: 'You are a meticulous step-by-step reasoning AI. Break down complex problems into clear, logical steps and verify each deduction before reaching conclusions.',
     concise: 'Provide direct, concise, and high-density responses. Omit conversational filler, polite preambles, and redundant summaries.',
@@ -373,28 +373,31 @@
   // Storage & Initialization
   // ---------------------------------------------------------------------------
   function loadSavedData() {
+    function getStored(key, legacyKey) {
+      return localStorage.getItem(key) || (legacyKey ? localStorage.getItem(legacyKey) : null);
+    }
     try {
-      const savedAdmin = localStorage.getItem(STORAGE_KEYS.ADMIN);
+      const savedAdmin = getStored(STORAGE_KEYS.ADMIN, 'lastchat_admin_config');
       if (savedAdmin) {
         state.admin = { ...state.admin, ...JSON.parse(savedAdmin) };
       }
-      const savedTuning = localStorage.getItem(STORAGE_KEYS.TUNING);
+      const savedTuning = getStored(STORAGE_KEYS.TUNING, 'lastchat_tuning_settings');
       if (savedTuning) {
         state.tuning = { ...state.tuning, ...JSON.parse(savedTuning) };
       }
-      const savedModel = localStorage.getItem(STORAGE_KEYS.CURRENT_MODEL);
+      const savedModel = getStored(STORAGE_KEYS.CURRENT_MODEL, 'lastchat_selected_model');
       if (savedModel) {
         state.currentModel = savedModel;
       }
-      const savedPinned = localStorage.getItem(STORAGE_KEYS.PINNED_MODELS);
+      const savedPinned = getStored(STORAGE_KEYS.PINNED_MODELS, 'lastchat_pinned_models');
       if (savedPinned) {
         state.pinnedModels = JSON.parse(savedPinned);
       }
-      const savedSessions = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+      const savedSessions = getStored(STORAGE_KEYS.SESSIONS, 'lastchat_playground_sessions');
       if (savedSessions) {
         state.sessions = JSON.parse(savedSessions);
       }
-      const savedCurrId = localStorage.getItem(STORAGE_KEYS.CURRENT_SESSION);
+      const savedCurrId = getStored(STORAGE_KEYS.CURRENT_SESSION, 'lastchat_current_session_id');
       if (savedCurrId && state.sessions.some(s => s.id === savedCurrId)) {
         state.currentSessionId = savedCurrId;
       }
@@ -500,7 +503,7 @@
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(session, null, 2));
     const dlAnchor = document.createElement('a');
     dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", `lastchat-playground-${session.id}.json`);
+    dlAnchor.setAttribute("download", `lastlab-${session.id}.json`);
     document.body.appendChild(dlAnchor);
     dlAnchor.click();
     dlAnchor.remove();
@@ -533,10 +536,10 @@
           </div>
         </div>
         <div style="display: flex; gap: 4px;">
-          <button class="session-delete-btn" title="Rename Session" onclick="window.LastChatApp.renameSession('${sess.id}', event)">
+          <button class="session-delete-btn" title="Rename Session" onclick="(window.LastLabApp || window.LastChatApp).renameSession('${sess.id}', event)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
           </button>
-          <button class="session-delete-btn" title="Delete Session" onclick="window.LastChatApp.deleteSession('${sess.id}', event)">
+          <button class="session-delete-btn" title="Delete Session" onclick="(window.LastLabApp || window.LastChatApp).deleteSession('${sess.id}', event)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           </button>
         </div>
@@ -806,10 +809,10 @@
         <div class="model-row-right">
           ${isReasoning ? '<span class="badge-tag reasoning">🧠 Thinks</span>' : ''}
           ${isVision ? '<span class="badge-tag vision">👁 Vision</span>' : ''}
-          <button class="probe-model-btn" title="Probe latency" onclick="window.LastChatApp.probeModel('${escapeHtml(m.id)}', this); event.stopPropagation();">
+          <button class="probe-model-btn" title="Probe latency" onclick="(window.LastLabApp || window.LastChatApp).probeModel('${escapeHtml(m.id)}', this); event.stopPropagation();">
             ${probeData ? `${probeData.latency}ms` : '⚡ Ping'}
           </button>
-          <button class="pin-model-btn ${isPinned ? 'pinned' : ''}" title="${isPinned ? 'Unpin' : 'Pin to Shelf'}" onclick="window.LastChatApp.togglePinModel('${escapeHtml(m.id)}', event);">
+          <button class="pin-model-btn ${isPinned ? 'pinned' : ''}" title="${isPinned ? 'Unpin' : 'Pin to Shelf'}" onclick="(window.LastLabApp || window.LastChatApp).togglePinModel('${escapeHtml(m.id)}', event);">
             ${isPinned ? '★' : '☆'}
           </button>
         </div>
@@ -1180,8 +1183,8 @@
         <div class="turn-stats">${footerStats}</div>
         <div class="turn-actions">
           ${isUser ? `<button class="turn-action-btn" onclick="dom.userInput.value='${escapeHtml(msg.content)}'; dom.userInput.focus();">Edit</button>` : ''}
-          <button class="turn-action-btn" onclick="window.LastChatApp.reRunTurn(${idx})">Re-run</button>
-          <button class="turn-action-btn" onclick="navigator.clipboard.writeText(this.closest('.chat-turn').querySelector('.message-text').innerText); window.LastChatApp.toast('Copied to clipboard');">
+          <button class="turn-action-btn" onclick="(window.LastLabApp || window.LastChatApp).reRunTurn(${idx})">Re-run</button>
+          <button class="turn-action-btn" onclick="navigator.clipboard.writeText(this.closest('.chat-turn').querySelector('.message-text').innerText); (window.LastLabApp || window.LastChatApp).toast('Copied to clipboard');">
             Copy
           </button>
         </div>
@@ -1544,10 +1547,12 @@
   // ---------------------------------------------------------------------------
   // Global Exposure
   // ---------------------------------------------------------------------------
-  window.LastChatApp = {
+  const appExports = {
     deleteSession,
     renameSession,
     exportCurrentSession,
+    openModelPicker,
+    switchToView,
     toast: showToast,
     selectModel,
     togglePinModel,
@@ -1557,6 +1562,8 @@
     renderChatMessages,
     state,
   };
+  window.LastLabApp = appExports;
+  window.LastChatApp = appExports; // Backwards compatibility bridge
 
   // ---------------------------------------------------------------------------
   // Bootstrap Application
@@ -1577,7 +1584,7 @@
     fetchModels();
     fetchProviders();
 
-    logAdmin('LastChat Mobile Playground initialized successfully.');
+    logAdmin('LastLab initialized successfully.');
   }
 
   if (document.readyState === 'loading') {

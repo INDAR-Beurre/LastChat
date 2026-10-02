@@ -9,7 +9,7 @@ const PREVIEW_PORT = 8990;
 const CDP_PORT = 9339;
 
 async function runPreviewVerification() {
-  console.log("=== Starting LastChat Mobile Studio Simulator Verification ===");
+  console.log("=== Starting LastLab Mobile Studio Simulator Verification ===");
 
   // 1. Launch Preview Server
   const serverProcess = spawn("node", [
@@ -111,7 +111,7 @@ async function runPreviewVerification() {
   console.log(`Default selected device: "${devName}"`);
 
   // Check 3: Check Iframe is loaded
-  const iframeLoaded = await evalCode("!!document.getElementById('mobile-iframe')?.contentWindow?.LastChatApp");
+  const iframeLoaded = await evalCode("!!(document.getElementById('mobile-iframe')?.contentWindow?.LastLabApp || document.getElementById('mobile-iframe')?.contentWindow?.LastChatApp)");
   console.log(`Mobile app loaded in iframe: ${iframeLoaded}`);
 
   // Check 4: Switch to Samsung Galaxy S24
@@ -153,7 +153,7 @@ async function runPreviewVerification() {
 
   // Check 7b: Re-open modal and test Escape key INSIDE IFRAME
   console.log("Testing Escape key inside iframe document closes modal...");
-  await evalCode("document.getElementById('mobile-iframe').contentWindow.LastChatApp.openModelPicker()");
+  await evalCode("(document.getElementById('mobile-iframe').contentWindow.LastLabApp || document.getElementById('mobile-iframe').contentWindow.LastChatApp).openModelPicker()");
   await new Promise(r => setTimeout(r, 400));
   await evalCode(`(() => {
     const iDoc = document.getElementById('mobile-iframe').contentDocument;
@@ -201,7 +201,7 @@ async function runPreviewVerification() {
   console.log(`Favicon /mobile/res/mipmap-hdpi/ic_launcher.png HTTP Status: ${iconRes.status} (expected: 200)`);
   if (iconRes.status !== 200) throw new Error(`Icon endpoint failed: status ${iconRes.status}`);
 
-  const apkRes = await fetch(`http://127.0.0.1:${PREVIEW_PORT}/dist/lastchat-playground.apk`, { method: "HEAD" });
+  const apkRes = await fetch(`http://127.0.0.1:${PREVIEW_PORT}/dist/lastlab.apk`, { method: "HEAD" });
   const dispHeader = apkRes.headers.get("content-disposition");
   console.log(`APK Content-Disposition header: "${dispHeader}"`);
   if (!dispHeader || !dispHeader.includes("attachment")) throw new Error("Missing APK attachment disposition header!");

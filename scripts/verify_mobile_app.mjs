@@ -38,7 +38,7 @@ await new Promise((resolve) => server.listen(8765, "127.0.0.1", resolve));
 console.log("Local HTTP asset server listening at http://127.0.0.1:8765");
 
 async function runVerification() {
-  console.log("=== Starting LastChat Mobile Playground Automated Verification ===");
+  console.log("=== Starting LastLab Automated Verification ===");
   const port = 9338;
   const browser = spawn("/opt/helium-browser-bin/helium", [
     "--headless=new",
@@ -158,7 +158,7 @@ async function runVerification() {
   console.log("Testing Android Back Button Bridge...");
   await evalCode("document.getElementById('model-trigger-btn').click()");
   await new Promise(r => setTimeout(r, 300));
-  const backHandled1 = await evalCode("window.LastChatApp.onBackPressed()");
+  const backHandled1 = await evalCode("(window.LastLabApp || window.LastChatApp).onBackPressed()");
   console.log(`Back button closed modal: ${backHandled1}`);
 
   // Check 4: Tuning View
@@ -171,9 +171,9 @@ async function runVerification() {
   console.log(`Architect preset prompt: "${systemPrompt.substring(0, 40)}..."`);
 
   // Back button from Tuning view returns to Chat view
-  const backHandled2 = await evalCode("window.LastChatApp.onBackPressed()");
+  const backHandled2 = await evalCode("(window.LastLabApp || window.LastChatApp).onBackPressed()");
   console.log(`Back button returned to chat view: ${backHandled2}`);
-  const activeView = await evalCode("window.LastChatApp.state.activeView");
+  const activeView = await evalCode("(window.LastLabApp || window.LastChatApp).state.activeView");
   console.log(`Active view after back: "${activeView}"`);
 
   // Check 5: Admin Gateway View
@@ -191,7 +191,8 @@ async function runVerification() {
   
   // Inject mock reasoning & code response to verify full markdown & thinking accordion UI
   await evalCode(`
-    const sess = window.LastChatApp.state.sessions.find(s => s.id === window.LastChatApp.state.currentSessionId);
+    const app = window.LastLabApp || window.LastChatApp;
+    const sess = app.state.sessions.find(s => s.id === app.state.currentSessionId);
     sess.messages.push({
       role: 'user',
       content: 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?',
@@ -201,12 +202,12 @@ async function runVerification() {
       role: 'assistant',
       model: 'deepseek-v4.1-flash',
       reasoning: 'First, identify the core need: concise Kotlin coroutines demonstration.\\nSecond, choose GlobalScope vs CoroutineScope. Use runBlocking or CoroutineScope(Dispatchers.Default).\\nThird, format with clean code comments and brief explanation.',
-      content: 'Here is an idiomatic and concise Kotlin coroutines example:\\n\\n\`\`\`kotlin\\nimport kotlinx.coroutines.*\\n\\nfun main() = runBlocking {\\n    val job = launch {\\n        delay(1000L)\\n        println(\"World! Generated from LastChat Mobile\")\\n    }\\n    println(\"Hello\")\\n    job.join()\\n}\\n\`\`\`\\n\\n### Key Highlights:\\n- **Structured Concurrency**: Using \`runBlocking\` creates a top-level coroutine scope.\\n- **Non-blocking delay**: \`delay(1000L)\` suspends without freezing threads.\\n- **Deterministic Join**: \`job.join()\` awaits asynchronous completion cleanly.',
+      content: 'Here is an idiomatic and concise Kotlin coroutines example:\\n\\n\`\`\`kotlin\\nimport kotlinx.coroutines.*\\n\\nfun main() = runBlocking {\\n    val job = launch {\\n        delay(1000L)\\n        println(\\"World! Generated from LastLab Mobile\\")\\n    }\\n    println(\\"Hello\\")\\n    job.join()\\n}\\n\`\`\`\\n\\n### Key Highlights:\\n- **Structured Concurrency**: Using \`runBlocking\` creates a top-level coroutine scope.\\n- **Non-blocking delay**: \`delay(1000L)\` suspends without freezing threads.\\n- **Deterministic Join**: \`job.join()\` awaits asynchronous completion cleanly.',
       latencyMs: 142,
       tokens: 284,
       timestamp: Date.now()
     });
-    window.LastChatApp.renderChatMessages();
+    app.renderChatMessages();
   `);
   await new Promise(r => setTimeout(r, 600));
   await takeScreenshot("verify_mobile_reasoning_and_code.png");

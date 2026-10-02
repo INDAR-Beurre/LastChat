@@ -17,7 +17,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
-    private static final String TAG = "LastChatMobile";
+    private static final String TAG = "LastLabMobile";
     private WebView webView;
 
     @Override
@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
         if (webView != null) {
             // First query the web app if it wants to handle back (e.g. close modal, dismiss sheet, return to chat tab)
             webView.evaluateJavascript(
-                "(function(){ try { return !!(window.LastChatApp && window.LastChatApp.onBackPressed && window.LastChatApp.onBackPressed()); } catch(e){ return false; } })()",
+                "(function(){ try { var app = window.LastLabApp || window.LastChatApp; return !!(app && app.onBackPressed && app.onBackPressed()); } catch(e){ return false; } })()",
                 result -> {
                     if ("true".equals(result)) {
                         // Consumed by web UI

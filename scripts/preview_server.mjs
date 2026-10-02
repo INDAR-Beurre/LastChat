@@ -2,7 +2,7 @@
 
 /**
  * ============================================================================
- * LastChat Mobile Studio — Lightweight Preview Server
+ * LastLab Studio — Lightweight Preview Server
  * Zero dependencies, pure Node.js standard library.
  * Designed for low-spec PCs: < 25MB RAM, instant startup (< 50ms).
  * ============================================================================
@@ -87,23 +87,26 @@ function handleRequest(req, res) {
   if (pathname === "/api/health" || pathname === "/api/network") {
     const net = getNetworkAddresses();
     const port = server.address().port;
-    const apkStat = fs.existsSync(path.join(DIST_DIR, "lastchat-playground.apk"))
-      ? fs.statSync(path.join(DIST_DIR, "lastchat-playground.apk"))
+    const apkFile = fs.existsSync(path.join(DIST_DIR, "lastlab.apk"))
+      ? "lastlab.apk"
+      : (fs.existsSync(path.join(DIST_DIR, "lastchat-playground.apk")) ? "lastchat-playground.apk" : "lastlab.apk");
+    const apkStat = fs.existsSync(path.join(DIST_DIR, apkFile))
+      ? fs.statSync(path.join(DIST_DIR, apkFile))
       : null;
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
       status: "ok",
-      app: "LastChat Mobile Playground",
+      app: "LastLab",
       edition: "Relay Edition",
-      version: "1.4.8",
+      version: "1.5.0",
       port,
       localUrl: `http://localhost:${port}/`,
       networkUrl: net.lan ? `http://${net.lan}:${port}/` : `http://localhost:${port}/`,
       tailscaleUrl: net.tailscale ? `http://${net.tailscale}:${port}/` : null,
       directAppUrl: `http://localhost:${port}/mobile/index.html`,
       apk: {
-        path: "dist/lastchat-playground.apk",
+        path: `dist/${apkFile}`,
         sizeBytes: apkStat ? apkStat.size : 0,
         sizeKb: apkStat ? Math.round(apkStat.size / 1024) : 0,
         exists: !!apkStat
@@ -157,7 +160,7 @@ function handleRequest(req, res) {
     };
 
     if (ext === ".apk") {
-      headers["Content-Disposition"] = 'attachment; filename="lastchat-playground.apk"';
+      headers["Content-Disposition"] = `attachment; filename="${path.basename(filePath)}"`;
     }
 
     res.writeHead(200, headers);
@@ -197,7 +200,7 @@ function printBanner(port, net) {
   const dim = "\x1b[2m";
   const reset = "\x1b[0m";
 
-  console.log("\n" + bold + cyan + "  📱 LastChat Mobile Studio — Device Preview Simulator" + reset);
+  console.log("\n" + bold + cyan + "  📱 LastLab Studio — Device Preview Simulator" + reset);
   console.log(dim + "  ────────────────────────────────────────────────────────────" + reset);
   console.log(`  ${bold}Local Simulator:${reset}    ${green}http://localhost:${port}/${reset}`);
   if (net.lan) {
@@ -207,7 +210,7 @@ function printBanner(port, net) {
     console.log(`  ${bold}Tailscale VPN:${reset}      ${green}http://${net.tailscale}:${port}/${reset}`);
   }
   console.log(`  ${bold}Direct Mobile App:${reset}  ${cyan}http://localhost:${port}/mobile/index.html${reset}`);
-  console.log(`  ${bold}Android APK Binary:${reset} ${yellow}http://localhost:${port}/dist/lastchat-playground.apk${reset}`);
+  console.log(`  ${bold}Android APK Binary:${reset} ${yellow}http://localhost:${port}/dist/lastlab.apk${reset}`);
   console.log(dim + "  ────────────────────────────────────────────────────────────" + reset);
   console.log(`  ${dim}Status:${reset} ${green}● Active${reset} | ${dim}Memory:${reset} ~22MB | ${dim}Target:${reset} Relay Gateway (@model-aggregator)`);
   console.log(`  ${dim}Shortcuts: Esc=Back Bridge, O=Rotate, 1-5=Switch Devices, R=Reload${reset}\n`);

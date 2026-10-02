@@ -1,5 +1,5 @@
 // ============================================================================
-// LastChat Mobile Studio — Simulator Controller
+// LastLab Studio — Simulator Controller
 // ============================================================================
 
 (function () {
@@ -206,8 +206,9 @@
     addLog('info', 'Simulating Android Hardware Back Key (onBackPressed bridge)...');
     try {
       const win = dom.iframe.contentWindow;
-      if (win && win.LastChatApp && typeof win.LastChatApp.onBackPressed === 'function') {
-        const handled = win.LastChatApp.onBackPressed();
+      const app = win?.LastLabApp || win?.LastChatApp;
+      if (app && typeof app.onBackPressed === 'function') {
+        const handled = app.onBackPressed();
         addLog('info', `Android Back Bridge returned: ${handled ? 'Handled by web UI' : 'Root view (App would exit)'}`);
         return handled;
       } else {
@@ -225,8 +226,9 @@
     addLog('info', 'Simulating Home Button -> Returning to Chat view...');
     try {
       const win = dom.iframe.contentWindow;
-      if (win && win.LastChatApp && typeof win.LastChatApp.switchToView === 'function') {
-        win.LastChatApp.switchToView('chat-view');
+      const app = win?.LastLabApp || win?.LastChatApp;
+      if (app && typeof app.switchToView === 'function') {
+        app.switchToView('chat-view');
       }
     } catch (e) {
       addLog('warn', `Home navigation error: ${e.message}`);
@@ -252,20 +254,21 @@
   function handleScenarioAction(action) {
     const win = dom.iframe.contentWindow;
     const doc = dom.iframe.contentDocument;
-    if (!win || !win.LastChatApp) {
+    const app = win?.LastLabApp || win?.LastChatApp;
+    if (!win || !app) {
       addLog('warn', 'App iframe is still loading. Please wait a second.');
       return;
     }
 
     switch (action) {
       case 'switch-chat':
-        win.LastChatApp.switchToView('chat-view');
+        app.switchToView('chat-view');
         addLog('info', 'Navigated to Chat view.');
         break;
 
       case 'open-model-picker':
-        if (typeof win.LastChatApp?.openModelPicker === 'function') {
-          win.LastChatApp.openModelPicker();
+        if (typeof app?.openModelPicker === 'function') {
+          app.openModelPicker();
         } else {
           doc?.getElementById('model-trigger-btn')?.click();
         }
@@ -273,12 +276,12 @@
         break;
 
       case 'switch-tuning':
-        win.LastChatApp.switchToView('tuning-view');
+        app.switchToView('tuning-view');
         addLog('info', 'Navigated to Hyperparameter Tuning view.');
         break;
 
       case 'switch-admin':
-        win.LastChatApp.switchToView('admin-view');
+        app.switchToView('admin-view');
         addLog('info', 'Navigated to Admin Gateway & Provider Matrix view.');
         break;
 
@@ -296,7 +299,7 @@
         break;
 
       case 'reset-storage':
-        if (confirm('Clear local playground storage and restart?')) {
+        if (confirm('Clear local LastLab storage and restart?')) {
           win.localStorage.clear();
           win.location.reload();
           addLog('warn', 'Local storage cleared. App reloaded.');
@@ -310,7 +313,8 @@
 
   function injectReasoningSample(win) {
     try {
-      const sess = win.LastChatApp.state.sessions.find(s => s.id === win.LastChatApp.state.currentSessionId);
+      const app = win.LastLabApp || win.LastChatApp;
+      const sess = app?.state?.sessions?.find(s => s.id === app.state.currentSessionId);
       if (!sess) return;
 
       sess.messages.push({
@@ -323,14 +327,14 @@
         role: 'assistant',
         model: 'deepseek-v4.1-flash',
         reasoning: 'First, identify the core requirement: concise Kotlin coroutines demonstration.\nSecond, choose runBlocking with structured launch.\nThird, format with clean syntax highlighting and key highlights breakdown.',
-        content: 'Here is an idiomatic and concise Kotlin coroutines example:\n\n```kotlin\nimport kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        delay(1000L)\n        println("World! Generated from LastChat Mobile")\n    }\n    println("Hello")\n    job.join()\n}\n```\n\n### Key Highlights:\n- **Structured Concurrency**: Using `runBlocking` creates a top-level coroutine scope.\n- **Non-blocking delay**: `delay(1000L)` suspends without freezing threads.\n- **Deterministic Join**: `job.join()` awaits asynchronous completion cleanly.',
+        content: 'Here is an idiomatic and concise Kotlin coroutines example:\n\n```kotlin\nimport kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        delay(1000L)\n        println("World! Generated from LastLab Mobile")\n    }\n    println("Hello")\n    job.join()\n}\n```\n\n### Key Highlights:\n- **Structured Concurrency**: Using `runBlocking` creates a top-level coroutine scope.\n- **Non-blocking delay**: `delay(1000L)` suspends without freezing threads.\n- **Deterministic Join**: `job.join()` awaits asynchronous completion cleanly.',
         latencyMs: 138,
         tokens: 284,
         timestamp: Date.now()
       });
 
-      win.LastChatApp.switchToView('chat-view');
-      win.LastChatApp.renderChatMessages();
+      app.switchToView('chat-view');
+      app.renderChatMessages();
       addLog('info', 'Injected full reasoning & code block into active chat session.');
     } catch (e) {
       addLog('error', `Failed to inject reasoning: ${e.message}`);
@@ -346,8 +350,11 @@
       const doc = dom.iframe.contentDocument;
       const win = dom.iframe.contentWindow;
       if (!doc || !win) return;
+      const app = win.LastLabApp || win.LastChatApp;
 
-      win.LastChatApp.switchToView('chat-view');
+      if (app) {
+        app.switchToView('chat-view');
+      }
 
       const userInput = doc.getElementById('user-input');
       const sendBtn = doc.getElementById('send-btn');
@@ -570,7 +577,7 @@
 
       const link = document.createElement('a');
       link.href = imageSrc;
-      link.download = `lastchat-${state.currentDevice}-${activePane}-${Date.now()}.png`;
+      link.download = `lastlab-${state.currentDevice}-${activePane}-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# LastChat Playground Mobile — Lightweight APK Builder
+# LastLab Mobile — Lightweight APK Builder
 # Designed for low-spec PCs: 0 heavy daemons, ~150MB RAM max, builds in 2s.
 # -----------------------------------------------------------------------------
 
@@ -12,7 +12,7 @@ MOBILE_DIR="$PROJECT_DIR/mobile"
 BUILD_DIR="$MOBILE_DIR/build"
 DIST_DIR="$PROJECT_DIR/dist"
 
-echo "=== LastChat Mobile APK Build ==="
+echo "=== LastLab Mobile APK Build ==="
 echo "Project Root: $PROJECT_DIR"
 
 # 1. Locate JDK (Java 17+)
@@ -94,8 +94,13 @@ echo "[6/6] Aligning & signing APK..."
 
 # Standardize output name
 SIGNED_APK=$(find "$DIST_DIR" -name "base-aligned-*.apk" | head -n 1)
-FINAL_APK="$DIST_DIR/lastchat-playground.apk"
+FINAL_APK="$DIST_DIR/lastlab.apk"
 mv -f "$SIGNED_APK" "$FINAL_APK"
+cp -f "$FINAL_APK" "$DIST_DIR/lastchat-playground.apk"
+
+# Generate checksums
+(cd "$DIST_DIR" && sha256sum "$(basename "$FINAL_APK")" > "lastlab.apk.sha256")
+(cd "$DIST_DIR" && sha256sum "lastchat-playground.apk" > "lastchat-playground.apk.sha256")
 
 echo "================================================="
 echo "✓ BUILD SUCCESSFUL!"

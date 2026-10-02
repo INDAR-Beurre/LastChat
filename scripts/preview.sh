@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# LastChat Mobile Playground — Launch Preview Simulator
+# LastLab — Launch Preview Simulator
 # Designed for low-spec PCs: 0 heavy tools, ~22MB RAM, instant launch.
 # -----------------------------------------------------------------------------
 
