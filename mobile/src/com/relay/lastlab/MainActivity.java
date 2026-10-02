@@ -1,4 +1,4 @@
-package com.relay.lastchat;
+package com.relay.lastlab;
 
 import android.app.Activity;
 import android.content.Intent;

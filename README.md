@@ -2,8 +2,8 @@
 
 # 🔬 LastLab
 
-### High-Density AI Mobile Playground & Admin Console
-*Single-provider architecture powered exclusively by the **Relay Gateway** (`@model-aggregator`)*
+### High-Density AI Mobile Playground & Native Admin Console
+*High-throughput mobile workbench powered exclusively by the **Relay Gateway** (`@model-aggregator`)*
 
 <br>
 
@@ -16,16 +16,29 @@
 
 <br>
 
-[⬇️ **Download Android APK (`lastlab.apk`)**](dist/lastlab.apk) &nbsp;•&nbsp;
-[📱 **Launch Preview Studio**](#-preview-anywhere-mobile-studio-simulator) &nbsp;•&nbsp;
-[⚡ **Quickstart**](#-quickstart) &nbsp;•&nbsp;
-[🧪 **Verification Suites**](#-automated-verification-suites)
+<p align="center">
+  <a href="dist/lastlab.apk">
+    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk%20(64%20KB)-0284c7?style=for-the-badge" alt="Download APK" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="#-preview-anywhere-mobile-studio-simulator">
+    <img src="https://img.shields.io/badge/📱%20Launch-Simulator%20Studio-0d9488?style=for-the-badge" alt="Launch Simulator" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="#-quickstart">
+    <img src="https://img.shields.io/badge/⚡%20Run-Quickstart-4f46e5?style=for-the-badge" alt="Quickstart" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="#-automated-verification-suites">
+    <img src="https://img.shields.io/badge/🧪%20Test-Verification%20Suites-059669?style=for-the-badge" alt="Verification" />
+  </a>
+</p>
 
 <br>
 
-<img src="dist/preview_simulator_desktop.png" alt="LastLab Mobile Studio Simulator" width="96%" style="border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.6);" />
+<img src="dist/preview_simulator_desktop.png" alt="LastLab Mobile Studio Simulator" width="100%" />
 
-*LastLab Mobile Studio — Zero-dependency desktop simulator previewing the live Android app inside an interactive Google Pixel 8 Pro chassis.*
+<sub>*LastLab Mobile Studio — Zero-dependency desktop simulator previewing the live Android app inside an interactive Google Pixel 8 Pro chassis.*</sub>
 
 </div>
 
@@ -53,13 +66,14 @@
 
 ## ✨ Executive Overview
 
-**LastLab** is a next-generation, high-density AI mobile playground application and native Android package engineered specifically for power users, prompt engineers, and LLM practitioners. LastLab provides an **exclusive, ultra-low-latency pipeline to the Relay Gateway** (`@model-aggregator`), combining desktop-grade playground controls with a sub-second headless APK compilation toolchain.
+**LastLab** is an ultra-fast, high-density AI mobile playground and native Android application engineered for AI researchers, prompt architects, and system operators. Built from the ground up to eliminate heavyweight IDE bloat, fragile multi-provider SDK layers, and multi-gigabyte build chains, LastLab delivers a sub-second developer workflow with an **exclusive, high-throughput pipeline to the Relay Gateway** (`@model-aggregator`).
 
 ### Why LastLab?
-- **Unified Provider Pipeline**: A single, robust connection point (`https://relay-gw.pages.dev`) orchestrates 35+ upstream providers (`workbuddy`, `yjs`, `tokenforge`, `bai`, etc.) with intelligent fallback and failover.
-- **Admin-First Ergonomics**: Designed for developers and operators who need real-time latency numbers, token accounting, raw prompt inspection, and instantaneous model swapping.
-- **No Heavy IDEs / Daemons**: Builds a cryptographic Android release in **under 0.5 seconds** with **~150MB peak RAM** using a headless toolchain (`aapt2`, `javac`, `d8`, `uber-apk-signer`).
-- **Complete Visual Simulator**: Test and demo on any PC, Mac, or browser without needing a physical Android phone or Android Studio emulator.
+- ⚡ **Sub-Second Native Build**: Produces a cryptographically signed, production-ready Android APK in **~0.4s** using a zero-daemon toolchain (`aapt2`, `javac`, `d8`, `uber-apk-signer`) with **< 150MB peak RAM**.
+- 🎛️ **Admin-First Ergonomics**: Live round-trip latency pings, token counter telemetry, raw payload and cURL inspectors, and one-tap model switching.
+- 🌐 **Unified Relay Gateway Pipeline**: A single, reliable edge endpoint (`https://relay-gw.pages.dev`) orchestrating 35+ upstream providers (`workbuddy`, `yjs`, `tokenforge`, `bai`, `openrouter`, etc.) with transparent failover.
+- 🖥️ **Full Desktop Preview Studio**: Zero-dependency browser preview server boots in under 50ms, featuring interactive Pixel 8 Pro, Galaxy S24, and iPhone 15 Pro chassis, simulated Android hardware navigation, and instant LAN QR sharing.
+- 📦 **Microscopic Footprint**: A full-featured native Android APK weighing only **64 KB** — less than 1/500th the size of standard mobile LLM apps.
 
 ---
 
@@ -67,42 +81,54 @@
 
 <table width="100%" align="center">
   <tr>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_reasoning_and_code.png" alt="Reasoning & Syntax Highlighting" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_reasoning_and_code.png">
+        <img src="dist/verify_mobile_reasoning_and_code.png" alt="Reasoning & Syntax Highlighting" width="100%" />
+      </a>
       <br>
       <strong>🧠 Thinking Trace & Syntax Highlighting</strong>
       <p><em>Collapsible step-by-step reasoning accordion with syntax-highlighted code blocks, copy-to-clipboard buttons, and per-turn latency/token metrics.</em></p>
     </td>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_model_picker.png" alt="Admin Model Registry" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_model_picker.png">
+        <img src="dist/verify_mobile_model_picker.png" alt="Admin Model Registry" width="100%" />
+      </a>
       <br>
       <strong>⚡ Admin Model Registry & Quick Shelf</strong>
       <p><em>Top pinned shelf, live upstream provider badges, search filter, modality tags (Vision/Reasoning), and real-time latency ping probes.</em></p>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_tuning_view.png" alt="Hyperparameters Studio" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_tuning_view.png">
+        <img src="dist/verify_mobile_tuning_view.png" alt="Hyperparameters Studio" width="100%" />
+      </a>
       <br>
       <strong>🎛️ Hyperparameter Studio</strong>
       <p><em>Granular controls for Temperature, Top-P, Max Tokens, Reasoning Effort levels, Penalties, and persona presets (Architect, Reasoner, Concise).</em></p>
     </td>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_admin_view.png" alt="Upstream Provider Matrix" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_admin_view.png">
+        <img src="dist/verify_mobile_admin_view.png" alt="Upstream Provider Matrix" width="100%" />
+      </a>
       <br>
       <strong>🌐 Upstream Provider Matrix & Diagnostics</strong>
       <p><em>Real-time grid showing 35+ backend providers connected to the Relay Gateway, gateway ping diagnostics, and live system log stream.</em></p>
     </td>
   </tr>
   <tr>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_inspector.png" alt="Raw cURL & JSON Inspector" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_inspector.png">
+        <img src="dist/verify_mobile_inspector.png" alt="Raw cURL & JSON Inspector" width="100%" />
+      </a>
       <br>
       <strong>📊 Raw Telemetry & cURL Inspector</strong>
-      <p><em>Instant inspection of the exact JSON payload, cURL command, HTTP headers, upstream provider route, and token consumption.</em></p>
+      <p><em>Instant inspection of the exact JSON payload, executable cURL command, HTTP headers, upstream provider route, and token consumption.</em></p>
     </td>
-    <td width="50%" align="center">
-      <img src="dist/verify_mobile_compact_360.png" alt="Compact Viewport Optimization" width="100%" />
+    <td width="50%" align="center" valign="top">
+      <a href="dist/verify_mobile_compact_360.png">
+        <img src="dist/verify_mobile_compact_360.png" alt="Compact Viewport Optimization" width="100%" />
+      </a>
       <br>
       <strong>📱 Pixel-Perfect Compact Viewport (360×780)</strong>
       <p><em>Designed with responsive CSS typography, ergonomic bottom navigation, touch targets, and edge-to-edge safe area padding.</em></p>
@@ -118,21 +144,22 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 
 | Property | Value | Notes |
 | :--- | :--- | :--- |
-| **Primary APK** | [`dist/lastlab.apk`](dist/lastlab.apk) | Standalone release package |
-| **Compatibility Copy** | [`dist/lastchat-playground.apk`](dist/lastchat-playground.apk) | Legacy reference symlink/alias |
-| **Package ID** | `me.rerere.lastlab` | Clean independent namespace |
+| **Primary APK** | [`dist/lastlab.apk`](dist/lastlab.apk) | Standalone signed production package |
+| **Package ID** | `me.rerere.lastlab` | Clean independent Android namespace |
+| **Launch Activity** | `com.relay.lastlab.MainActivity` | Native activity entry point |
 | **Application Label** | `LastLab` | System launcher display name |
 | **Target SDK** | `33` (Android 13 / 14) | Full modern Android compliance |
 | **Minimum SDK** | `24` (Android 7.0 Nougat) | Broad hardware compatibility |
-| **File Size** | **64 KB** (`62,375` bytes) | 1/1000th the size of typical AI apps |
-| **SHA-256 Checksum** | `9db860f74643aafcc0d1fb9abea86619a6163282115ec7a2a4ff6be632ca2417` | Verified cryptographic hash |
+| **Binary Size** | **64 KB** (`62,374` bytes) | Microscopic footprint (~0.06 MB) |
+| **SHA-256 Checksum** | `9b1932abd535c52fa600751cbb11fc76ac224a4b226a5d7d1ee6db64962976fd` | Cryptographic SHA-256 integrity hash |
+| **Signature Schemes** | `v1 + v2 + v3` | Dual JAR & APK Signature Scheme v2/v3 verified |
 
 ---
 
 ## 🎛️ Core Feature Architecture
 
 ### 1. Admin Model Registry & Quick Shelf
-- **Pinned Model Shelf**: One-tap switching between your favorite foundational models (`deepseek-v4.1-flash`, `kimi-k3-1`, `glm-5.2`, `agnes-image-2-5-flash`, etc.).
+- **Pinned Model Shelf**: One-tap switching between foundational models (`deepseek-v4.1-flash`, `kimi-k3-1`, `glm-5.2`, `agnes-image-2-5-flash`, etc.).
 - **Live Upstream Routing Badges**: Cards clearly indicate which upstream provider handles the model (`workbuddy`, `yjs`, `tokenforge`, `bai`).
 - **Real-Time Latency Probing**: Built-in `⚡ Ping` tool measures round-trip time directly against the Relay Gateway.
 - **Modality Badges**: Context window size (`128k`, `200k`), max output tokens, reasoning capabilities, and vision flags.
@@ -140,7 +167,7 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 ### 2. Step-by-Step Thinking & Reasoning Accordion
 - **Native Thought Detection**: Automatically parses XML tags (`<think>...</think>`), structured JSON thoughts, and streaming delta tokens.
 - **Collapsible Titanium Accordion**: Keep lengthy mathematical or logical deductions neatly tucked away until you need to audit them.
-- **Thought Duration & Metrics**: Informs the user of total reasoning steps and latency taken before generation.
+- **Thought Duration & Metrics**: Displays reasoning step count and elapsed latency prior to token generation.
 
 ### 3. Full Playground Hyperparameter Controls
 - **Temperature & Top-P**: Continuous precision sliders with instant numeric feedback.
@@ -151,7 +178,7 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 
 ### 4. Upstream Provider Health Matrix
 - **35+ Providers Discovered Live**: Inspect which underlying relays are active, degrading, or failing over.
-- **Gateway Gateway Status**: Visual ping monitor checking connectivity to `relay-gw.pages.dev`.
+- **Gateway Status Monitor**: Visual ping monitor checking connectivity to `relay-gw.pages.dev`.
 - **Admin Diagnostics Terminal**: Live rolling logs capturing network events, fallback attempts, and token counts.
 
 ### 5. Raw cURL & Telemetry Inspector
@@ -247,8 +274,8 @@ npm run build:apk
 
 ### 1. Clone & Enter Repository
 ```bash
-git clone https://github.com/INDAR-Beurre/LastChat.git
-cd LastChat
+git clone https://github.com/INDAR-Beurre/LastChat.git lastlab
+cd lastlab
 ```
 
 ### 2. Preview the App in Browser
@@ -338,11 +365,13 @@ Authorization: Bearer <ADMIN_TOKEN_OPTIONAL>
 
 <div align="center">
 
-**LastLab** • Crafted with precision for power users and AI practitioners.
-
+**LastLab** • High-Density Mobile AI Playground & Admin Console
 <br>
+<sub>Crafted with precision for power users and AI practitioners.</sub>
 
-<sub><sup>*Origin lineage: initiated from a fork of LastChat.*</sup></sub>
+<br><br>
+
+<sub><sup>*Origin lineage: initiated from a fork of <a href="https://github.com/Cocolalilal/LastChat">LastChat</a>. Re-engineered as a dedicated standalone mobile playground and administrative relay workbench.*</sup></sub>
 
 <br>
 

@@ -91,6 +91,14 @@ async function runPreviewVerification() {
   }
 
   async function takeScreenshot(filename) {
+    await evalCode(`(() => {
+      const iDoc = document.getElementById('mobile-iframe')?.contentDocument;
+      if (iDoc) {
+        iDoc.querySelectorAll('.toast, .toast-container').forEach(t => t.remove());
+        const assistantTurn = iDoc.querySelector('.chat-turn.assistant');
+        if (assistantTurn) assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
+    })()`);
     const shot = await send("Page.captureScreenshot", { format: "png" }, sessionId);
     if (shot.result?.data) {
       fs.writeFileSync(path.join(DIST_DIR, filename), Buffer.from(shot.result.data, "base64"));

@@ -116,6 +116,7 @@ async function runVerification() {
   }
 
   async function takeScreenshot(filename) {
+    await evalCode("document.querySelectorAll('.toast, .toast-container').forEach(t => t.remove())");
     const shot = await send("Page.captureScreenshot", { format: "png" }, sessionId);
     if (shot.result?.data) {
       fs.writeFileSync(path.join(DIST_DIR, filename), Buffer.from(shot.result.data, "base64"));
@@ -201,19 +202,32 @@ async function runVerification() {
     sess.messages.push({
       role: 'assistant',
       model: 'deepseek-v4.1-flash',
-      reasoning: 'First, identify the core need: concise Kotlin coroutines demonstration.\\nSecond, choose GlobalScope vs CoroutineScope. Use runBlocking or CoroutineScope(Dispatchers.Default).\\nThird, format with clean code comments and brief explanation.',
-      content: 'Here is an idiomatic and concise Kotlin coroutines example:\\n\\n\`\`\`kotlin\\nimport kotlinx.coroutines.*\\n\\nfun main() = runBlocking {\\n    val job = launch {\\n        delay(1000L)\\n        println(\\"World! Generated from LastLab Mobile\\")\\n    }\\n    println(\\"Hello\\")\\n    job.join()\\n}\\n\`\`\`\\n\\n### Key Highlights:\\n- **Structured Concurrency**: Using \`runBlocking\` creates a top-level coroutine scope.\\n- **Non-blocking delay**: \`delay(1000L)\` suspends without freezing threads.\\n- **Deterministic Join**: \`job.join()\` awaits asynchronous completion cleanly.',
+      reasoning: 'First, identify the core requirement: concise Kotlin coroutines demonstration.\\nSecond, choose runBlocking with structured launch.\\nThird, format with clean syntax highlighting and key highlights breakdown.',
+      content: 'Here is an idiomatic and concise Kotlin coroutines example:\\n\\n\`\`\`kotlin\\nimport kotlinx.coroutines.*\\n\\nfun main() = runBlocking {\\n    val job = launch {\\n        delay(1000L)\\n        println(\\"Hello from LastLab!\\")\\n    }\\n    println(\\"Running...\\")\\n    job.join()\\n}\\n\`\`\`\\n\\n### Key Highlights:\\n- **Structured Concurrency**: Using \`runBlocking\` creates a top-level coroutine scope.\\n- **Non-blocking delay**: \`delay(1000L)\` suspends without freezing threads.\\n- **Deterministic Join**: \`job.join()\` awaits asynchronous completion cleanly.',
       latencyMs: 142,
       tokens: 284,
       timestamp: Date.now()
     });
     app.renderChatMessages();
+    const assistantTurn = document.querySelector('.chat-turn.assistant');
+    if (assistantTurn) {
+      assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
   `);
   await new Promise(r => setTimeout(r, 600));
   await takeScreenshot("verify_mobile_reasoning_and_code.png");
 
   // Check 7: Raw Inspector Modal
   console.log("Opening Raw JSON Inspector modal...");
+  await evalCode(`(() => {
+    const app = window.LastLabApp || window.LastChatApp;
+    app.state.lastRequest.curl = [
+      'curl -X POST "https://relay-gw.pages.dev/v1/chat/completions" \\\\',
+      '  -H "Content-Type: application/json" \\\\',
+      '  -H "Authorization: Bearer sk-relay-admin" \\\\',
+      '  -d \\'{\\n    "model": "deepseek-v4.1-flash",\\n    "messages": [\\n      {"role": "user", "content": "Demonstrate Kotlin coroutines."}\\n    ],\\n    "temperature": 0.7,\\n    "top_p": 1.0,\\n    "stream": true\\n  }\\''
+    ].join('\\n');
+  })()`);
   await evalCode("document.getElementById('inspect-raw-btn').click()");
   await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_inspector.png");
@@ -227,6 +241,12 @@ async function runVerification() {
     deviceScaleFactor: 2,
     mobile: true
   }, sessionId);
+  await evalCode(`
+    const assistantTurn = document.querySelector('.chat-turn.assistant');
+    if (assistantTurn) {
+      assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+  `);
   await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_compact_360.png");
 

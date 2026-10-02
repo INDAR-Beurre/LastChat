@@ -327,14 +327,47 @@
         role: 'assistant',
         model: 'deepseek-v4.1-flash',
         reasoning: 'First, identify the core requirement: concise Kotlin coroutines demonstration.\nSecond, choose runBlocking with structured launch.\nThird, format with clean syntax highlighting and key highlights breakdown.',
-        content: 'Here is an idiomatic and concise Kotlin coroutines example:\n\n```kotlin\nimport kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        delay(1000L)\n        println("World! Generated from LastLab Mobile")\n    }\n    println("Hello")\n    job.join()\n}\n```\n\n### Key Highlights:\n- **Structured Concurrency**: Using `runBlocking` creates a top-level coroutine scope.\n- **Non-blocking delay**: `delay(1000L)` suspends without freezing threads.\n- **Deterministic Join**: `job.join()` awaits asynchronous completion cleanly.',
+        content: 'Here is an idiomatic and concise Kotlin coroutines example:\n\n```kotlin\nimport kotlinx.coroutines.*\n\nfun main() = runBlocking {\n    val job = launch {\n        delay(1000L)\n        println("Hello from LastLab!")\n    }\n    println("Running...")\n    job.join()\n}\n```\n\n### Key Highlights:\n- **Structured Concurrency**: Using `runBlocking` creates a top-level coroutine scope.\n- **Non-blocking delay**: `delay(1000L)` suspends without freezing threads.\n- **Deterministic Join**: `job.join()` awaits asynchronous completion cleanly.',
         latencyMs: 138,
         tokens: 284,
         timestamp: Date.now()
       });
 
+      if (app.state) {
+        app.state.lastRequest = {
+          curl: 'curl -X POST https://relay-gw.pages.dev/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -H "Authorization: Bearer sk-relay-admin" \\\n  -d \'{\n    "model": "deepseek-v4.1-flash",\n    "messages": [\n      {"role": "user", "content": "Show Kotlin coroutines."}\n    ],\n    "temperature": 0.7,\n    "top_p": 1.0,\n    "stream": true\n  }\'',
+          requestJson: JSON.stringify({
+            model: "deepseek-v4.1-flash",
+            messages: [{ role: "user", content: "Show Kotlin coroutines." }],
+            temperature: 0.7,
+            top_p: 1.0,
+            max_tokens: 4096,
+            stream: true
+          }, null, 2),
+          responseJson: JSON.stringify({
+            id: "chatcmpl-lastlab-8f92a",
+            object: "chat.completion",
+            model: "deepseek-v4.1-flash",
+            provider: "workbuddy",
+            latency_ms: 138,
+            usage: { prompt_tokens: 28, completion_tokens: 284, total_tokens: 312 }
+          }, null, 2)
+        };
+      }
+
       app.switchToView('chat-view');
       app.renderChatMessages();
+
+      // Cleanly scroll assistant message into view and dismiss transient toasts
+      setTimeout(() => {
+        const doc = win.document;
+        doc.querySelectorAll('.toast, .toast-container').forEach(t => t.remove());
+        const assistantTurn = doc.querySelector('.chat-turn.assistant');
+        if (assistantTurn) {
+          assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
+      }, 50);
+
       addLog('info', 'Injected full reasoning & code block into active chat session.');
     } catch (e) {
       addLog('error', `Failed to inject reasoning: ${e.message}`);
