@@ -40,6 +40,45 @@ The build completes in ~0.5 seconds and outputs `dist/lastchat-playground.apk`.
 
 ---
 
+## 📱 Preview Anywhere Without a Phone (Mobile Studio Simulator)
+
+Away from home or don't have an Android device on hand? LastChat includes a **zero-dependency, lightweight Mobile Device Simulator & Preview Server** (< 25MB RAM, instant boot in 50ms) designed for low-spec PCs.
+
+<div align="center">
+  <img src="dist/preview_simulator_desktop.png" alt="LastChat Mobile Studio Simulator" width="90%" />
+</div>
+
+### Features of the Mobile Simulator
+- **Realistic Smartphone Chassis**: Framed with metallic chassis, dynamic punch-hole camera/notch, and real-time updating digital status bar.
+- **Device Presets**: Instantly switch between Google Pixel 8 Pro (412x915), Samsung Galaxy S24 (360x780), Apple iPhone 15 Pro (393x852), Compact Mobile (360x640), and Foldable / Tablet (768x1024).
+- **Android Back Button Bridge**: Hardware back button (`◀` or `Esc`) invokes the app's native `onBackPressed()` bridge to dismiss bottom sheets, close modals, and navigate back to chat tabs.
+- **Fast Scenario Injections**: Test one-click scenarios including step-by-step thinking accordions (DeepSeek R1), Kotlin coroutine code snippets, tuning sliders, and admin provider matrices.
+- **Live Device Console**: Real-time streaming of `console.log`, `warn`, and `error` from inside the mobile webview.
+- **LAN & Tailscale Sharing with QR Code**: Generates an inline SVG QR code and network URL (`http://<LAN_IP>:8080/`) to preview on any phone, tablet, or secondary computer connected to your Wi-Fi or Tailscale network.
+- **Direct App & APK Downloads**: Quick access to `/mobile/` standalone mode and one-click download for `dist/lastchat-playground.apk`.
+
+### Starting the Preview Simulator
+
+```bash
+./scripts/preview.sh
+# Or using npm:
+npm run preview
+```
+
+Open `http://localhost:8080/` in your browser.
+
+### Automated Testing & Verification
+
+```bash
+# Verify the Mobile App in headless Chromium (CDP)
+node scripts/verify_mobile_app.mjs
+
+# Verify the Desktop Preview Simulator
+node scripts/verify_preview.mjs
+```
+
+---
+
 ## Original LastChat Overview
 
 

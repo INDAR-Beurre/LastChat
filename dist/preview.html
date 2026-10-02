@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LastChat Mobile Playground — Visual Showcase & Preview</title>
+  <style>
+    :root {
+      --bg: #090c12;
+      --card: #101522;
+      --border: rgba(255, 255, 255, 0.08);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 32px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .title-group { display: flex; align-items: center; gap: 12px; }
+    .title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--cyan);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--cyan);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .hero-text h2 { font-size: 18px; margin-bottom: 6px; }
+    .hero-text p { color: var(--muted); font-size: 13px; max-width: 600px; }
+    .hero-cmd {
+      background: #05070b;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      color: var(--emerald);
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .gallery-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .gallery-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(6, 182, 212, 0.4);
+    }
+    .gallery-img-wrap {
+      background: #05070a;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 380px;
+      overflow: hidden;
+    }
+    .gallery-img-wrap img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    .card-meta {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .card-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .card-desc { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-group">
+      <h1 class="title">LastChat Mobile Playground</h1>
+      <span class="badge">PREVIEW & VERIFICATION</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a href="/dist/lastchat-playground.apk" download class="btn">⬇️ Download APK (62KB)</a>
+      <a href="/" class="btn btn-secondary">📱 Launch Live Simulator</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero-banner">
+      <div class="hero-text">
+        <h2>Preview Anywhere Without a Phone</h2>
+        <p>Run the interactive simulator locally or over LAN on any PC, laptop, or browser with 0 heavy dependencies.</p>
+      </div>
+      <div class="hero-cmd">
+        $ ./scripts/preview.sh
+      </div>
+    </div>
+
+    <h2 style="font-size:16px;margin-bottom:16px;">Rendered Screen Verifications</h2>
+    <div class="gallery-grid">
+      
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="preview_simulator_desktop.png" alt="Desktop Simulator">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">🖥️ Desktop Studio Simulator</div>
+          <div class="card-desc">Full interactive chassis with device switcher, live console, and Android hardware back button bridge.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_chat_empty.png" alt="Chat Empty Surface">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">💬 Chat Surface & Telemetry</div>
+          <div class="card-desc">Starter prompts, live provider status, latency and token metrics.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_model_picker.png" alt="Admin Model Registry">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">⚡ Admin Model Registry</div>
+          <div class="card-desc">Quick picks shelf, live health dots, provider filter chips, and search.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_reasoning_and_code.png" alt="Reasoning & Code">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">🧠 Reasoning & Code Accordion</div>
+          <div class="card-desc">Step-by-step thinking block, formatted markdown, and Kotlin syntax highlight.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_tuning_view.png" alt="Hyperparameter Tuning">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">🎛️ Hyperparameter Tuning</div>
+          <div class="card-desc">Temperature, top-p, max tokens, reasoning effort, and system prompt presets.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_admin_view.png" alt="Admin Gateway Matrix">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">🛡️ Admin Gateway Console</div>
+          <div class="card-desc">Upstream provider matrix, latency probes, and admin token management.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_inspector.png" alt="Raw Telemetry Inspector">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">🔍 Raw Inspector Modal</div>
+          <div class="card-desc">Live cURL command preview and raw JSON request/response telemetry.</div>
+        </div>
+      </div>
+
+      <div class="gallery-card">
+        <div class="gallery-img-wrap">
+          <img src="verify_mobile_compact_360.png" alt="Compact Viewport">
+        </div>
+        <div class="card-meta">
+          <div class="card-title">📱 Compact 360×780 Viewport</div>
+          <div class="card-desc">Verified responsive scaling on ultra-compact mobile screens.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

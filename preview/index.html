@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LastChat Mobile Studio — Device Preview Simulator</title>
+  <link rel="stylesheet" href="css/simulator.css">
+  <link rel="icon" type="image/png" href="/mobile/res/mipmap-hdpi/ic_launcher.png">
+</head>
+<body>
+  <div id="studio-root">
+    
+    <!-- Top Studio Navigation Bar -->
+    <header class="studio-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span>LastChat Studio</span>
+          <span class="brand-badge">PREVIEW</span>
+        </div>
+        <div class="live-indicator">
+          <span class="pulse-dot"></span>
+          <span id="gateway-status-text">Relay Gateway Connected</span>
+        </div>
+      </div>
+
+      <!-- Center Device & Viewport Controls -->
+      <div class="controls-center">
+        <!-- Device Selection -->
+        <div class="segmented-control" id="device-selector">
+          <button class="seg-btn active" data-device="pixel8" title="Google Pixel 8 Pro (412x915)">
+            <span>📱 Pixel 8</span>
+          </button>
+          <button class="seg-btn" data-device="s24" title="Samsung Galaxy S24 (360x780)">
+            <span>📱 S24</span>
+          </button>
+          <button class="seg-btn" data-device="iphone15" title="Apple iPhone 15 Pro (393x852)">
+            <span>🍏 iPhone 15</span>
+          </button>
+          <button class="seg-btn" data-device="compact" title="Compact Android (360x640)">
+            <span>📟 360p</span>
+          </button>
+          <button class="seg-btn" data-device="tablet" title="Tablet / Foldable (768x1024)">
+            <span>💻 Tablet</span>
+          </button>
+        </div>
+
+        <!-- Scale Controls -->
+        <div class="segmented-control" id="scale-selector">
+          <button class="seg-btn active" data-scale="auto">Auto</button>
+          <button class="seg-btn" data-scale="0.75">75%</button>
+          <button class="seg-btn" data-scale="0.9">90%</button>
+          <button class="seg-btn" data-scale="1.0">100%</button>
+        </div>
+
+        <!-- Rotate & Frame Switchers -->
+        <button id="btn-rotate" class="control-btn" title="Rotate Orientation (O)">
+          <svg viewBox="0 0 24 24"><path d="M7.11 8.53L5.7 7.11C4.8 8.27 4.24 9.61 4.07 11h2.02c.14-.87.49-1.72.97-2.47zM6.09 13H4.07c.17 1.39.72 2.73 1.62 3.89l1.41-1.42c-.52-.75-.84-1.6-.97-2.47zm1.02 5.36l1.42-1.42c.75.48 1.6.83 2.47.97v2.02c-1.39-.17-2.73-.72-3.89-1.57zM13 4.07V1L8.45 5.55 13 10V6.09c3.37 0 6.13 2.62 6.38 5.91h2.02C21.14 7.28 17.47 4.07 13 4.07zm4.89 12.82c-.75.52-1.6.84-2.47.97v2.02c1.39-.17 2.73-.73 3.89-1.62l-1.42-1.37zM19.93 11h2.02c-.17-1.39-.72-2.73-1.62-3.89l-1.42 1.42c.52.75.84 1.6.97 2.47z"/></svg>
+        </button>
+
+        <button id="btn-toggle-frame" class="control-btn" title="Toggle Phone Chassis Frame">
+          <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
+        </button>
+      </div>
+
+      <!-- Quick Action Utility Buttons -->
+      <div class="header-actions">
+        <button id="btn-network-share" class="control-btn" title="Network QR & Sharing (LAN)">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          <span>Share / LAN</span>
+        </button>
+
+        <button id="btn-snapshot" class="control-btn" title="Take Screen Snapshot (S)">
+          <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+          <span>Snapshot</span>
+        </button>
+
+        <a id="btn-direct-app" href="/mobile/index.html" target="_blank" class="control-btn" title="Open Mobile App directly without frame">
+          <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+          <span>Direct App</span>
+        </a>
+
+        <a id="btn-download-apk" href="/dist/lastchat-playground.apk" download="lastchat-playground.apk" class="control-btn btn-primary" title="Download Android APK (62 KB)">
+          <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+          <span>Download APK</span>
+          <span class="badge-tag">62KB</span>
+        </a>
+
+        <button id="btn-toggle-drawer" class="control-btn" title="Toggle Dev Drawer">
+          <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Studio Main Workspace -->
+    <div class="studio-body">
+      
+      <!-- Device Stage Area -->
+      <main class="device-stage" id="device-stage">
+        
+        <div class="device-container" id="device-container">
+          
+          <!-- Smartphone Chassis -->
+          <div class="device-frame" id="device-frame">
+            
+            <!-- Speaker Slit -->
+            <div class="device-speaker"></div>
+
+            <!-- Punch-hole Camera / Dynamic Island -->
+            <div class="device-notch" id="device-notch">
+              <div class="notch-lens"></div>
+            </div>
+
+            <!-- Simulated Mobile Status Bar -->
+            <div class="device-status-bar">
+              <div class="status-left">
+                <span class="status-clock" id="status-clock">10:45</span>
+              </div>
+              <div class="status-right">
+                <!-- 5G Signal -->
+                <svg class="status-icon" viewBox="0 0 24 24"><path d="M2 22h20V2L2 22z"/></svg>
+                <!-- Wi-Fi -->
+                <svg class="status-icon" viewBox="0 0 24 24"><path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 4c3.48 0 6.64 1.35 9 3.55L12 19.46 3 11.55A12.87 12.87 0 0 1 12 8z"/></svg>
+                <!-- Battery 100% -->
+                <svg class="status-icon" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+              </div>
+            </div>
+
+            <!-- Iframe Viewport Container -->
+            <div class="device-screen-wrapper" id="screen-wrapper">
+              <iframe id="mobile-iframe" src="/mobile/index.html" title="LastChat Mobile App"></iframe>
+            </div>
+
+            <!-- Simulated Android Navigation Bar -->
+            <div class="device-nav-bar" id="device-nav-bar">
+              <button id="nav-btn-back" class="nav-hardware-btn" title="Simulate Android Back Key (Esc)">
+                <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+              </button>
+              <button id="nav-btn-home" class="nav-hardware-btn" title="Simulate Home Button">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg>
+              </button>
+              <button id="nav-btn-recents" class="nav-hardware-btn" title="Simulate Overview / Recents">
+                <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+              </button>
+            </div>
+
+          </div>
+          
+        </div>
+
+      </main>
+
+      <!-- Studio Side Drawer -->
+      <aside class="studio-drawer" id="studio-drawer">
+        
+        <div class="drawer-header">
+          <div class="drawer-title">
+            <svg style="width:14px;height:14px;fill:currentColor" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            <span>Playground Tools</span>
+          </div>
+          <button id="btn-close-drawer" class="seg-btn" title="Close Drawer">✕</button>
+        </div>
+
+        <div class="drawer-tabs">
+          <button class="drawer-tab-btn active" data-tab="tab-actions">Scenarios</button>
+          <button class="drawer-tab-btn" data-tab="tab-console">Console (<span id="console-count">0</span>)</button>
+          <button class="drawer-tab-btn" data-tab="tab-specs">Specs & LAN</button>
+        </div>
+
+        <div class="drawer-content">
+          
+          <!-- TAB 1: Fast Scenarios & Views -->
+          <div class="drawer-pane active" id="tab-actions">
+            
+            <div>
+              <div class="section-title">Jump to App Screen</div>
+              <div class="action-grid">
+                <button class="scenario-btn" data-action="switch-chat">
+                  <div class="scenario-btn-title">💬 Chat Surface</div>
+                  <div class="scenario-btn-desc">Root playground conversation</div>
+                </button>
+                <button class="scenario-btn" data-action="open-model-picker">
+                  <div class="scenario-btn-title">⚡ Model Drawer</div>
+                  <div class="scenario-btn-desc">Admin Model Registry sheet</div>
+                </button>
+                <button class="scenario-btn" data-action="switch-tuning">
+                  <div class="scenario-btn-title">🎛️ Tuning View</div>
+                  <div class="scenario-btn-desc">Sliders, temp, presets</div>
+                </button>
+                <button class="scenario-btn" data-action="switch-admin">
+                  <div class="scenario-btn-title">🛡️ Admin Gateway</div>
+                  <div class="scenario-btn-desc">Provider matrix & ping probes</div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-title">Quick Test Injections</div>
+              <div class="action-grid">
+                <button class="scenario-btn" data-action="inject-reasoning">
+                  <div class="scenario-btn-title">🧠 Reasoning & Code</div>
+                  <div class="scenario-btn-desc">Inject DeepSeek thinking + Kotlin snippet</div>
+                </button>
+                <button class="scenario-btn" data-action="open-inspector">
+                  <div class="scenario-btn-title">🔍 Raw Inspector</div>
+                  <div class="scenario-btn-desc">Inspect telemetry cURL & JSON</div>
+                </button>
+                <button class="scenario-btn" data-action="test-back-nav">
+                  <div class="scenario-btn-title">◀ Android Back Bridge</div>
+                  <div class="scenario-btn-desc">Trigger onBackPressed() bridge</div>
+                </button>
+                <button class="scenario-btn" data-action="reset-storage">
+                  <div class="scenario-btn-title">🧹 Clear Storage</div>
+                  <div class="scenario-btn-desc">Reset session cache to defaults</div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-title">Live Prompt Injection</div>
+              <div style="display:flex;gap:6px;">
+                <input type="text" id="dev-prompt-input" class="modal-url-input" placeholder="Type prompt to send directly..." value="Summarize why @model-aggregator provides high resilience:">
+                <button id="dev-prompt-send-btn" class="control-btn btn-primary">Send</button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- TAB 2: Live Console Stream -->
+          <div class="drawer-pane" id="tab-console">
+            <div class="console-box">
+              <div class="console-toolbar">
+                <div class="console-filters">
+                  <button class="console-filter-btn active" data-filter="all">All</button>
+                  <button class="console-filter-btn" data-filter="info">Info</button>
+                  <button class="console-filter-btn" data-filter="warn">Warn</button>
+                  <button class="console-filter-btn" data-filter="error">Error</button>
+                </div>
+                <div style="display:flex;gap:4px;">
+                  <button id="btn-copy-logs" class="console-filter-btn">Copy</button>
+                  <button id="btn-clear-logs" class="console-filter-btn">Clear</button>
+                </div>
+              </div>
+              <div class="console-logs-list" id="console-logs-list">
+                <div class="console-log-row info">
+                  <span class="log-tag info">INFO</span>
+                  <span>Simulator logging initialized. Listening to app iframe...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Device Specs & LAN Sharing -->
+          <div class="drawer-pane" id="tab-specs">
+            <div class="section-title">Simulated Environment</div>
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Current Device</span>
+                <span class="info-val" id="spec-device-name">Google Pixel 8 Pro</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Screen Resolution</span>
+                <span class="info-val" id="spec-resolution">412 × 915 px</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Device Pixel Ratio</span>
+                <span class="info-val">2.625 DPR</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Simulated Android</span>
+                <span class="info-val">Android 14 (API 34)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Relay Gateway</span>
+                <span class="info-val" style="color:var(--accent-cyan)">relay-gw.pages.dev</span>
+              </div>
+            </div>
+
+            <div class="section-title">Compiled Android Package</div>
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Package Name</span>
+                <span class="info-val">me.rerere.lastchat.playground</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">APK File</span>
+                <span class="info-val">dist/lastchat-playground.apk</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Build Type</span>
+                <span class="info-val">Signed Release (v1+v2+v3)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Target SDK</span>
+                <span class="info-val">33 (Android 13/14)</span>
+              </div>
+            </div>
+
+            <div class="section-title">Local Network & Tailscale</div>
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Local Host</span>
+                <span class="info-val" id="spec-local-url">http://localhost:8080/</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">LAN IP</span>
+                <span class="info-val" id="spec-lan-url">Detecting...</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Modal Dialog for LAN Sharing & QR Code -->
+    <div class="studio-modal-backdrop" id="modal-network">
+      <div class="studio-modal-card">
+        <button class="modal-close-btn" id="modal-network-close">✕</button>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:6px;">Preview on Another Device</h3>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">
+          Scan with your phone or tablet on the same Wi-Fi or Tailscale network to preview the app without installing the APK:
+        </p>
+
+        <div class="modal-qr-container" id="modal-qr-svg"></div>
+
+        <div class="modal-url-input-wrap">
+          <input type="text" id="modal-share-url" class="modal-url-input" readonly>
+          <button id="modal-copy-url-btn" class="control-btn btn-primary">Copy</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/qrcode.js"></script>
+  <script src="js/simulator.js"></script>
+</body>
+</html>

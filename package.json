@@ -1,0 +1,13 @@
+{
+  "name": "lastchat-mobile-playground",
+  "version": "1.4.8",
+  "description": "LastChat Mobile AI Playground & Admin Console powered by @model-aggregator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "node scripts/preview_server.mjs",
+    "build:apk": "./scripts/build_apk.sh",
+    "verify": "node scripts/verify_mobile_app.mjs",
+    "verify:preview": "node scripts/verify_preview.mjs"
+  }
+}
