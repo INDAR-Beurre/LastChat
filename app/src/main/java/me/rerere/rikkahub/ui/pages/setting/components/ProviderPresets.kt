@@ -43,6 +43,28 @@ data class ProviderPreset(
 
 val FALLBACK_PROVIDER_PRESETS = listOf(
     ProviderPreset(
+        id = "d5734028-d39b-4d41-9841-fd648d65440e",
+        name = "Relay Gateway (@model-aggregator)",
+        description = "High-throughput mobile AI relay gateway aggregating frontier models for LastLab Playground",
+        type = ProviderSetting.OpenAI::class,
+        baseUrl = "https://relay-gw.pages.dev/v1",
+        setupRecommended = true,
+        setupOrder = 0,
+        setupDescription = "Exclusive edge gateway powered by @model-aggregator",
+        setupModelIds = listOf(
+            "auto",
+            "deepseek-v4-1-flash",
+            "gpt-6-astra",
+            "gpt-5-5",
+            "claude-opus-5",
+            "gemini-3-8-flash",
+            "qwen3-8-flash",
+            "qwen3-8-max",
+            "mimo-v2-6-pro",
+            "instant"
+        )
+    ),
+    ProviderPreset(
         name = "OpenRouter",
         description = "Access many hosted models through one OpenAI-compatible API",
         type = ProviderSetting.OpenAI::class,

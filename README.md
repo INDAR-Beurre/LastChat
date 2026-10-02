@@ -8,8 +8,8 @@
 <br>
 
 [![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024--34)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](dist/lastlab.apk)
-[![APK Size](https://img.shields.io/badge/APK%20Size-64%20KB-06B6D4?style=for-the-badge&logo=speedtest&logoColor=white)](dist/lastlab.apk)
-[![Build Speed](https://img.shields.io/badge/Build%20Time-~0.4s-10B981?style=for-the-badge&logo=fastapi&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
+[![APK Size](https://img.shields.io/badge/APK%20Size-2.0%20MB-06B6D4?style=for-the-badge&logo=speedtest&logoColor=white)](dist/lastlab.apk)
+[![Build Speed](https://img.shields.io/badge/Build%20Time-~0.7s-10B981?style=for-the-badge&logo=fastapi&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
 [![Memory Peak](https://img.shields.io/badge/Peak%20RAM-%3C%20150MB-F59E0B?style=for-the-badge&logo=ram&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
 [![Provider Gateway](https://img.shields.io/badge/Gateway-@model--aggregator-8B5CF6?style=for-the-badge&logo=cloudflare&logoColor=white)](#-relay-gateway-architecture)
 [![No Android Studio](https://img.shields.io/badge/Android%20Studio-NOT%20REQUIRED-EF4444?style=for-the-badge&logo=googleplay&logoColor=white)](#-zero-dependency-headless-apk-toolchain)
@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="dist/lastlab.apk">
-    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk%20(64%20KB)-0284c7?style=for-the-badge" alt="Download APK" />
+    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk%20(2.0%20MB)-0284c7?style=for-the-badge" alt="Download APK" />
   </a>
   &nbsp;&nbsp;
   <a href="#-preview-anywhere-mobile-studio-simulator">
@@ -69,11 +69,11 @@
 **LastLab** is an ultra-fast, high-density AI mobile playground and native Android application engineered for AI researchers, prompt architects, and system operators. Built from the ground up to eliminate heavyweight IDE bloat, fragile multi-provider SDK layers, and multi-gigabyte build chains, LastLab delivers a sub-second developer workflow with an **exclusive, high-throughput pipeline to the Relay Gateway** (`@model-aggregator`).
 
 ### Why LastLab?
-- ⚡ **Sub-Second Native Build**: Produces a cryptographically signed, production-ready Android APK in **~0.4s** using a zero-daemon toolchain (`aapt2`, `javac`, `d8`, `uber-apk-signer`) with **< 150MB peak RAM**.
-- 🎛️ **Admin-First Ergonomics**: Live round-trip latency pings, token counter telemetry, raw payload and cURL inspectors, and one-tap model switching.
-- 🌐 **Unified Relay Gateway Pipeline**: A single, reliable edge endpoint (`https://relay-gw.pages.dev`) orchestrating 35+ upstream providers (`workbuddy`, `yjs`, `tokenforge`, `bai`, `openrouter`, etc.) with transparent failover.
+- ⚡ **Sub-Second Native Build**: Produces a cryptographically signed, production-ready Android APK in **~0.7s** using a zero-daemon toolchain (`aapt2`, `javac`, `d8`, `uber-apk-signer`) with **< 150MB peak RAM**.
+- 🎛️ **Admin-First Ergonomics**: Live token counter telemetry, context/output limit badges (`128k ctx`, `1M ctx`), direct model ID switching, filter tags (`Reasoning`, `Vision`, `1M+ Ctx`).
+- 🌐 **Unified Relay Gateway Pipeline**: A single, reliable edge endpoint (`https://relay-gw.pages.dev/v1`) orchestrating high-performance LLM models (`deepseek-v4-1-flash`, `auto`, `gpt-6-astra`, `gpt-5-5`, `claude-opus-5`, etc.).
 - 🖥️ **Full Desktop Preview Studio**: Zero-dependency browser preview server boots in under 50ms, featuring interactive Pixel 8 Pro, Galaxy S24, and iPhone 15 Pro chassis, simulated Android hardware navigation, and instant LAN QR sharing.
-- 📦 **Microscopic Footprint**: A full-featured native Android APK weighing only **64 KB** — less than 1/500th the size of standard mobile LLM apps.
+- 📦 **Authentic React 19 Client**: Bundles the authentic LastChat frontend (React 19, Tailwind CSS v4, Shiki syntax highlighting, KaTeX, Radix UI, Motion) into a signed standalone Android APK of only **2.0 MB**.
 
 ---
 
@@ -150,8 +150,8 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 | **Application Label** | `LastLab` | System launcher display name |
 | **Target SDK** | `33` (Android 13 / 14) | Full modern Android compliance |
 | **Minimum SDK** | `24` (Android 7.0 Nougat) | Broad hardware compatibility |
-| **Binary Size** | **64 KB** (`62,374` bytes) | Microscopic footprint (~0.06 MB) |
-| **SHA-256 Checksum** | `9b1932abd535c52fa600751cbb11fc76ac224a4b226a5d7d1ee6db64962976fd` | Cryptographic SHA-256 integrity hash |
+| **Binary Size** | **2.0 MB** (`2,014,852` bytes) | Bundles authentic React 19 production build |
+| **SHA-256 Checksum** | `2fac83df8b87c9073a405fcfa33f56462dc0733a9e5b9959065332de724164ca` | Cryptographic SHA-256 integrity hash |
 | **Signature Schemes** | `v1 + v2 + v3` | Dual JAR & APK Signature Scheme v2/v3 verified |
 
 ---
@@ -255,7 +255,7 @@ Traditional Android builds require 10GB+ of Android Studio, Gradle daemons that 
  │  -signer  │
  └─────┬─────┘
        ▼
- 🏆 dist/lastlab.apk (64 KB, Ready to Install)
+ 🏆 dist/lastlab.apk (2.0 MB, Ready to Install)
 ```
 
 ### Build Command

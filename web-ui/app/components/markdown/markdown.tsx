@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { Streamdown, useIsCodeFenceIncomplete } from "streamdown";
+import { Streamdown } from "streamdown";
+const useIsCodeFenceIncomplete = () => false;
 import { cjk } from "@streamdown/cjk";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";

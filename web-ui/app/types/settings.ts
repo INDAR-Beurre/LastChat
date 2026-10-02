@@ -158,6 +158,8 @@ export interface ProviderModel {
   iconUrl?: string | null;
   customIconUri?: string | null;
   providerSlug?: string | null;
+  contextWindowTokens?: number | null;
+  maxOutputTokens?: number | null;
   [key: string]: unknown;
 }
 

@@ -691,8 +691,17 @@ export const ConversationSidebar = React.memo(
 
     return (
       <Sidebar collapsible="offcanvas" variant="sidebar">
-        <SidebarHeader className="items-start gap-2 px-2 pt-2 pb-0.5">
-          <Logo className="size-10 shrink-0" />
+        <SidebarHeader className="items-center justify-between px-3 pt-3 pb-1">
+          <div className="flex items-center gap-2.5">
+            <Logo className="size-8 shrink-0 rounded-lg shadow-sm" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold tracking-tight text-sm text-foreground">LastLab</span>
+                <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">PLAYGROUND</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground/75 font-mono">@model-aggregator</span>
+            </div>
+          </div>
         </SidebarHeader>
         <SidebarContent className="min-h-0">
           <SidebarGroup className="px-2 pt-0.5 pb-0.5">
@@ -1009,6 +1018,9 @@ export const ConversationSidebar = React.memo(
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+          <div className="px-2 pt-1 pb-0.5 text-center text-[10px] text-muted-foreground/60 border-t border-sidebar-border/30">
+            LastLab • <span className="opacity-75">forked from LastChat</span>
           </div>
         </SidebarFooter>
       </Sidebar>

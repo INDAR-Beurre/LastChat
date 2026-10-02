@@ -62,6 +62,38 @@ function AppContent() {
     });
   }, []);
 
+  React.useEffect(() => {
+    const handleBackPressed = () => {
+      const openPopover = document.querySelector('[data-state="open"]');
+      if (openPopover) {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        return true;
+      }
+      return false;
+    };
+
+    const bridge = {
+      version: "1.5.0",
+      gateway: "https://relay-gw.pages.dev",
+      onBackPressed: handleBackPressed,
+      openModelPicker: () => {
+        const btn = document.getElementById("model-trigger-btn");
+        if (btn) btn.click();
+      },
+      closeModelPicker: () => {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      },
+    };
+
+    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastLabApp = bridge;
+    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastChatApp = bridge;
+
+    return () => {
+      delete (window as unknown as { LastLabApp?: typeof bridge }).LastLabApp;
+      delete (window as unknown as { LastChatApp?: typeof bridge }).LastChatApp;
+    };
+  }, []);
+
   useSettingsSubscription(!webAuthLocked);
 
   return (

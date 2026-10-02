@@ -53,10 +53,21 @@ export function ConversationGreeting({ className }: { className?: string }) {
   const bucket = getGreetingBucket(hour);
 
   return (
-    <span className={cn("text-balance", className)}>
-      {t(`conversations.greeting.${bucket}`, {
-        defaultValue: GREETING_DEFAULTS[bucket],
-      })}
-    </span>
+    <div className={cn("flex flex-col items-center gap-2 text-balance", className)}>
+      <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>LastLab Playground</span>
+        <span className="text-muted-foreground/60">•</span>
+        <span className="text-muted-foreground text-[11px] font-mono">relay-gw.pages.dev</span>
+      </div>
+      <span className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+        {t(`conversations.greeting.${bucket}`, {
+          defaultValue: GREETING_DEFAULTS[bucket],
+        })}
+      </span>
+      <p className="text-xs text-muted-foreground max-w-md text-center">
+        Mobile AI playground powered exclusively by the Relay Gateway (<span className="text-primary font-mono">@model-aggregator</span>).
+      </p>
+    </div>
   );
 }

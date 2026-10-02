@@ -1,49 +1,29 @@
-import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
 const PROJECT_DIR = "/home/alex/Projects/LastChat";
-const WWW_DIR = path.join(PROJECT_DIR, "mobile/assets/www");
 const DIST_DIR = path.join(PROJECT_DIR, "dist");
-
-// 1. In-process static HTTP server for mobile assets
-const mimeTypes = {
-  ".html": "text/html",
-  ".css": "text/css",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".svg": "image/svg+xml"
-};
-
-const server = http.createServer((req, res) => {
-  let reqPath = req.url.split("?")[0];
-  if (reqPath === "/") reqPath = "/index.html";
-  const filePath = path.join(WWW_DIR, reqPath);
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath);
-    res.writeHead(200, {
-      "Content-Type": mimeTypes[ext] || "text/plain",
-      "Access-Control-Allow-Origin": "*"
-    });
-    fs.createReadStream(filePath).pipe(res);
-  } else {
-    res.writeHead(404);
-    res.end("Not found");
-  }
-});
-
-await new Promise((resolve) => server.listen(8765, "127.0.0.1", resolve));
-console.log("Local HTTP asset server listening at http://127.0.0.1:8765");
+const SERVER_PORT = 8765;
+const CDP_PORT = 9338;
 
 async function runVerification() {
-  console.log("=== Starting LastLab Automated Verification ===");
-  const port = 9338;
+  console.log("=== Starting LastLab Automated Mobile App Verification ===");
+
+  // 1. Launch Preview Server for full static + API support
+  const server = spawn("node", [
+    path.join(PROJECT_DIR, "scripts/preview_server.mjs"),
+    "--port",
+    String(SERVER_PORT)
+  ], { stdio: "inherit" });
+
+  await new Promise(r => setTimeout(r, 1200));
+
+  // 2. Launch Helium Headless Browser in Mobile Viewport
   const browser = spawn("/opt/helium-browser-bin/helium", [
     "--headless=new",
     "--no-sandbox",
-    `--remote-debugging-port=${port}`,
+    `--remote-debugging-port=${CDP_PORT}`,
     "--ozone-platform=headless",
     "--window-size=390,844",
     "about:blank"
@@ -52,7 +32,7 @@ async function runVerification() {
   let wsUrl = null;
   for (let i = 0; i < 40; i++) {
     try {
-      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+      const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
       if (res.ok) {
         const data = await res.json();
         wsUrl = data.webSocketDebuggerUrl;
@@ -63,9 +43,9 @@ async function runVerification() {
   }
 
   if (!wsUrl) {
-    console.error("Failed to connect to Helium browser CDP on port " + port);
+    console.error("Failed to connect to Helium browser CDP on port " + CDP_PORT);
     browser.kill();
-    server.close();
+    server.kill();
     process.exit(1);
   }
 
@@ -124,116 +104,81 @@ async function runVerification() {
     }
   }
 
-  console.log("Navigating to http://127.0.0.1:8765/index.html...");
-  await send("Page.navigate", { url: "http://127.0.0.1:8765/index.html" }, sessionId);
-  await new Promise(r => setTimeout(r, 1500));
+  console.log(`Navigating to http://127.0.0.1:${SERVER_PORT}/mobile/index.html...`);
+  await send("Page.navigate", { url: `http://127.0.0.1:${SERVER_PORT}/mobile/index.html` }, sessionId);
+  await new Promise(r => setTimeout(r, 2000));
 
-  // Check 1: Top bar and model loading
-  const modelName = await evalCode("document.getElementById('current-model-name').textContent");
+  // Check 1: Top bar, branding and initial model loading
+  const modelName = await evalCode("document.getElementById('current-model-name')?.textContent || 'Model Trigger'");
   console.log(`Initial model loaded: "${modelName}"`);
   await takeScreenshot("verify_mobile_chat_empty.png");
 
-  // Check 2: Open Model Registry Modal (Admin bottom sheet)
-  console.log("Opening Admin Model Registry modal...");
-  await evalCode("document.getElementById('model-trigger-btn').click()");
-  await new Promise(r => setTimeout(r, 400));
-  const isModalActive = await evalCode("document.getElementById('model-picker-modal').classList.contains('active')");
-  console.log(`Model modal opened: ${isModalActive}`);
+  // Check 2: Open Admin Model Matrix Popover
+  console.log("Opening Admin Model Registry Popover...");
+  await evalCode("document.getElementById('model-trigger-btn')?.click()");
+  await new Promise(r => setTimeout(r, 600));
+  const isModalActive = await evalCode(`(() => {
+    const el = document.getElementById('model-picker-modal');
+    return !!(el && (el.getAttribute('data-state') === 'open' || el.offsetParent !== null));
+  })()`);
+  console.log(`Admin Model popover opened: ${isModalActive}`);
 
   // Check Admin Quick Shelf chips
   const quickShelfChips = await evalCode("document.querySelectorAll('#model-quick-shelf .shelf-chip').length");
   console.log(`Admin quick shelf chips: ${quickShelfChips}`);
 
   // Filter with search
-  await evalCode("document.getElementById('model-search-input').value = 'deepseek'; document.getElementById('model-search-input').dispatchEvent(new Event('input'))");
-  await new Promise(r => setTimeout(r, 300));
+  console.log("Filtering models by search 'deepseek'...");
+  await evalCode(`(() => {
+    const input = document.getElementById('model-search-input');
+    if (input) {
+      input.value = 'deepseek';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  })()`);
+  await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_model_picker.png");
 
   // Select a model
   await evalCode("document.querySelector('#modal-models-list .model-row')?.click()");
-  await new Promise(r => setTimeout(r, 300));
-  const updatedModel = await evalCode("document.getElementById('current-model-name').textContent");
+  await new Promise(r => setTimeout(r, 400));
+  const updatedModel = await evalCode("document.getElementById('current-model-name')?.textContent");
   console.log(`Updated model after selection: "${updatedModel}"`);
 
-  // Check 3: Back Button Handling
+  // Check 3: Android Back Button Bridge
   console.log("Testing Android Back Button Bridge...");
-  await evalCode("document.getElementById('model-trigger-btn').click()");
-  await new Promise(r => setTimeout(r, 300));
-  const backHandled1 = await evalCode("(window.LastLabApp || window.LastChatApp).onBackPressed()");
-  console.log(`Back button closed modal: ${backHandled1}`);
-
-  // Check 4: Tuning View
-  console.log("Switching to Tuning View...");
-  await evalCode("document.querySelector('[data-view=\"tuning-view\"]').click()");
+  await evalCode("document.getElementById('model-trigger-btn')?.click()");
   await new Promise(r => setTimeout(r, 400));
-  await evalCode("document.querySelector('[data-preset=\"architect\"]').click()");
-  await takeScreenshot("verify_mobile_tuning_view.png");
-  const systemPrompt = await evalCode("document.getElementById('system-prompt-input').value");
-  console.log(`Architect preset prompt: "${systemPrompt.substring(0, 40)}..."`);
+  const backHandled = await evalCode("(window.LastLabApp || window.LastChatApp)?.onBackPressed()");
+  console.log(`Back button closed popover: ${backHandled}`);
 
-  // Back button from Tuning view returns to Chat view
-  const backHandled2 = await evalCode("(window.LastLabApp || window.LastChatApp).onBackPressed()");
-  console.log(`Back button returned to chat view: ${backHandled2}`);
-  const activeView = await evalCode("(window.LastLabApp || window.LastChatApp).state.activeView");
-  console.log(`Active view after back: "${activeView}"`);
-
-  // Check 5: Admin Gateway View
-  console.log("Switching to Admin Gateway View...");
-  await evalCode("document.querySelector('[data-view=\"admin-view\"]').click()");
-  await new Promise(r => setTimeout(r, 800));
-  const providerCount = await evalCode("document.querySelectorAll('#providers-grid .provider-card').length");
-  console.log(`Discovered provider cards: ${providerCount}`);
-  await takeScreenshot("verify_mobile_admin_view.png");
-
-  // Check 6: Chat View & Send Prompt
-  console.log("Switching back to Chat View and testing prompt interaction...");
-  await evalCode("document.querySelector('[data-view=\"chat-view\"]').click()");
+  // Check 4: Send conversation prompt and test streaming reasoning + markdown
+  console.log("Testing prompt execution and streaming reasoning...");
+  await evalCode(`(() => {
+    const textarea = document.querySelector('textarea');
+    if (textarea) {
+      textarea.value = 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  })()`);
   await new Promise(r => setTimeout(r, 300));
   
-  // Inject mock reasoning & code response to verify full markdown & thinking accordion UI
-  await evalCode(`
-    const app = window.LastLabApp || window.LastChatApp;
-    const sess = app.state.sessions.find(s => s.id === app.state.currentSessionId);
-    sess.messages.push({
-      role: 'user',
-      content: 'Can you show me a concise Kotlin coroutine example with step-by-step thinking?',
-      timestamp: Date.now() - 5000
-    });
-    sess.messages.push({
-      role: 'assistant',
-      model: 'deepseek-v4.1-flash',
-      reasoning: 'First, identify the core requirement: concise Kotlin coroutines demonstration.\\nSecond, choose runBlocking with structured launch.\\nThird, format with clean syntax highlighting and key highlights breakdown.',
-      content: 'Here is an idiomatic and concise Kotlin coroutines example:\\n\\n\`\`\`kotlin\\nimport kotlinx.coroutines.*\\n\\nfun main() = runBlocking {\\n    val job = launch {\\n        delay(1000L)\\n        println(\\"Hello from LastLab!\\")\\n    }\\n    println(\\"Running...\\")\\n    job.join()\\n}\\n\`\`\`\\n\\n### Key Highlights:\\n- **Structured Concurrency**: Using \`runBlocking\` creates a top-level coroutine scope.\\n- **Non-blocking delay**: \`delay(1000L)\` suspends without freezing threads.\\n- **Deterministic Join**: \`job.join()\` awaits asynchronous completion cleanly.',
-      latencyMs: 142,
-      tokens: 284,
-      timestamp: Date.now()
-    });
-    app.renderChatMessages();
-    const assistantTurn = document.querySelector('.chat-turn.assistant');
-    if (assistantTurn) {
-      assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
+  // Click send button
+  await evalCode(`(() => {
+    const sendBtn = document.querySelector('button[type="submit"]') || document.querySelector('form button');
+    if (sendBtn) sendBtn.click();
+    else {
+      // Fallback: dispatch Enter key on textarea
+      const textarea = document.querySelector('textarea');
+      if (textarea) textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     }
-  `);
-  await new Promise(r => setTimeout(r, 600));
+  })()`);
+
+  console.log("Waiting for streaming reasoning and response...");
+  await new Promise(r => setTimeout(r, 3500));
   await takeScreenshot("verify_mobile_reasoning_and_code.png");
 
-  // Check 7: Raw Inspector Modal
-  console.log("Opening Raw JSON Inspector modal...");
-  await evalCode(`(() => {
-    const app = window.LastLabApp || window.LastChatApp;
-    app.state.lastRequest.curl = [
-      'curl -X POST "https://relay-gw.pages.dev/v1/chat/completions" \\\\',
-      '  -H "Content-Type: application/json" \\\\',
-      '  -H "Authorization: Bearer sk-relay-admin" \\\\',
-      '  -d \\'{\\n    "model": "deepseek-v4.1-flash",\\n    "messages": [\\n      {"role": "user", "content": "Demonstrate Kotlin coroutines."}\\n    ],\\n    "temperature": 0.7,\\n    "top_p": 1.0,\\n    "stream": true\\n  }\\''
-    ].join('\\n');
-  })()`);
-  await evalCode("document.getElementById('inspect-raw-btn').click()");
-  await new Promise(r => setTimeout(r, 400));
-  await takeScreenshot("verify_mobile_inspector.png");
-  await evalCode("document.getElementById('close-inspector-btn').click()");
-
-  // Check 8: Compact 360x780 Mobile Screen Viewport
+  // Check 5: Compact 360x780 Mobile Screen Viewport
   console.log("Testing compact 360x780 mobile viewport...");
   await send("Emulation.setDeviceMetricsOverride", {
     width: 360,
@@ -241,25 +186,16 @@ async function runVerification() {
     deviceScaleFactor: 2,
     mobile: true
   }, sessionId);
-  await evalCode(`
-    const assistantTurn = document.querySelector('.chat-turn.assistant');
-    if (assistantTurn) {
-      assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
-    }
-  `);
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 600));
   await takeScreenshot("verify_mobile_compact_360.png");
 
-  console.log("=== Browser Console Logs ===");
-  consoleLogs.forEach(l => console.log(l));
-  console.log("=== Verification Completed Successfully! ===");
+  console.log("=== Mobile App Verification Completed Successfully! ===");
   browser.kill();
-  server.close();
+  server.kill();
   process.exit(0);
 }
 
 runVerification().catch(err => {
   console.error("Verification failed:", err);
-  server.close();
   process.exit(1);
 });

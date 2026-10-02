@@ -47,6 +47,13 @@ function formatModality(model: ProviderModel): string {
   return `${input} -> ${output}`;
 }
 
+function formatContextTokens(tokens?: number | null): string | null {
+  if (!tokens || tokens <= 0) return null;
+  if (tokens >= 1_000_000) return `${Math.round(tokens / 100_000) / 10}M ctx`;
+  if (tokens >= 1_000) return `${Math.round(tokens / 1_000)}k ctx`;
+  return `${tokens} ctx`;
+}
+
 function getAbilityLabel(ability: ModelAbility, t: TFunction): string {
   if (ability === "TOOL") {
     return t("model_list.ability_tool");
@@ -77,6 +84,7 @@ function ModelOptionRow({
   t,
 }: ModelOptionRowProps) {
   const abilities = model.abilities ?? [];
+  const ctxLabel = formatContextTokens(model.contextWindowTokens);
 
   return (
     <div
@@ -84,7 +92,7 @@ function ModelOptionRow({
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       className={cn(
-        "flex w-full items-center gap-2 rounded-[var(--radius-card-inner)] border border-border/70 bg-background/90 px-2.5 py-1.5 text-left transition hover:bg-accent",
+        "model-row flex w-full items-center gap-2 rounded-[var(--radius-card-inner)] border border-border/70 bg-background/90 px-2.5 py-1.5 text-left transition hover:bg-accent",
         disabled && "pointer-events-none opacity-60",
         selected && "border-primary/25 bg-primary/10",
       )}
@@ -118,18 +126,31 @@ function ModelOptionRow({
         <div className="truncate text-xs font-medium leading-tight">
           {getModelDisplayName(model.displayName, model.modelId)}
         </div>
-        <div className="text-muted-foreground truncate text-[11px] leading-tight">
+        <div className="text-muted-foreground truncate text-[11px] leading-tight font-mono">
           {model.modelId}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1">
+          {ctxLabel && (
+            <Badge variant="outline" className="px-1 py-0 text-[9px] font-mono border-cyan-500/40 text-cyan-400 bg-cyan-500/10">
+              {ctxLabel}
+            </Badge>
+          )}
           <Badge variant="outline" className="px-1 py-0 text-[9px]">
             {formatModality(model)}
           </Badge>
           {abilities.map((ability) => (
-            <Badge key={ability} variant="secondary" className="px-1 py-0 text-[9px]">
+            <Badge key={ability} variant="secondary" className={cn(
+              "px-1 py-0 text-[9px]",
+              ability === "REASONING" && "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+            )}>
               {getAbilityLabel(ability, t)}
             </Badge>
           ))}
+          {model.providerSlug && (
+            <Badge variant="outline" className="px-1 py-0 text-[9px] font-mono opacity-80">
+              {model.providerSlug}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -220,13 +241,34 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
   }, [sections, selectedProviderId]);
   const filteredModels = React.useMemo(() => sections.flatMap((section) => section.models), [sections]);
 
+  const [adminFilter, setAdminFilter] = React.useState<"all" | "reasoning" | "vision" | "highctx">("all");
+  const [directModelInput, setDirectModelInput] = React.useState("");
+
   const favoriteModels = React.useMemo(() => {
     return favoriteModelIds
       .map((id) => filteredModels.find((model) => model.id === id))
       .filter((model): model is ProviderModel => model !== undefined);
   }, [favoriteModelIds, filteredModels]);
   const isFavoriteSectionSelected = selectedProviderId === FAVORITE_SECTION_ID;
-  const displayedModels = isFavoriteSectionSelected ? favoriteModels : (selectedSection?.models ?? []);
+  const rawDisplayedModels = isFavoriteSectionSelected ? favoriteModels : (selectedSection?.models ?? []);
+
+  const displayedModels = React.useMemo(() => {
+    return rawDisplayedModels.filter((model) => {
+      if (adminFilter === "reasoning") {
+        return (
+          (model.abilities ?? []).includes("REASONING") ||
+          /deepseek|r1|reason|opus|astra/i.test(model.modelId)
+        );
+      }
+      if (adminFilter === "vision") {
+        return (model.inputModalities ?? []).includes("IMAGE") || /image|vision/i.test(model.modelId);
+      }
+      if (adminFilter === "highctx") {
+        return (model.contextWindowTokens ?? 0) >= 1_000_000 || /mimo|gemini|qwen/i.test(model.modelId);
+      }
+      return true;
+    });
+  }, [rawDisplayedModels, adminFilter]);
 
   const currentModel = React.useMemo(
     () => allModels.find((model) => model.id === currentModelId) ?? null,
@@ -354,6 +396,8 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
     >
       <PopoverTrigger asChild>
         <Button
+          id="model-trigger-btn"
+          data-testid="model-trigger-btn"
           type="button"
           variant="ghost"
           size="sm"
@@ -372,25 +416,34 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
             customIconUri={currentModel?.customIconUri}
             providerSlug={currentModel?.providerSlug}
           />
-          <span className="hidden min-w-0 flex-1 truncate text-left sm:block">
+          <span id="current-model-name" className="hidden min-w-0 flex-1 truncate text-left sm:block">
             {currentModelLabel}
           </span>
           <ChevronDown className="hidden size-3.5 shrink-0 sm:block" />
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-[min(96vw,30rem)] gap-0 p-0">
-        <PopoverHeader className="px-4 pt-4 pb-2">
-          <PopoverTitle className="text-sm">{t("model_list.title")}</PopoverTitle>
-          <PopoverDescription className="text-xs">
-            {t("model_list.description")}
+      <PopoverContent id="model-picker-modal" align="end" className="w-[min(96vw,30rem)] gap-0 p-0 overflow-hidden shadow-2xl border-border/80">
+        <PopoverHeader className="px-4 pt-3.5 pb-2.5 border-b border-border/40 bg-muted/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PopoverTitle className="text-sm font-semibold tracking-tight text-foreground">Admin Model Matrix</PopoverTitle>
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] font-semibold text-primary tracking-wide">
+                RELAY ADMIN
+              </span>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono">relay-gw.pages.dev</span>
+          </div>
+          <PopoverDescription className="text-xs text-muted-foreground mt-0.5">
+            Direct model routing powered exclusively by @model-aggregator
           </PopoverDescription>
         </PopoverHeader>
 
-        <div className="space-y-3 px-3 py-3">
+        <div className="space-y-2.5 px-3 py-2.5">
           <div className="relative">
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2" />
             <Input
+              id="model-search-input"
               value={searchKeywords}
               onChange={(event) => {
                 setSearchKeywords(event.target.value);
@@ -398,6 +451,97 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
               placeholder={t("model_list.search_placeholder")}
               className="h-8 border-border/70 bg-muted/45 pl-7 text-xs"
             />
+          </div>
+
+          <div id="model-quick-shelf" className="flex items-center gap-1 overflow-x-auto pb-0.5 scrollbar-none text-[11px]">
+            <button
+              type="button"
+              onClick={() => setAdminFilter("all")}
+              className={cn(
+                "shelf-chip rounded-md px-2 py-1 transition text-xs",
+                adminFilter === "all" ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminFilter("reasoning")}
+              className={cn(
+                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
+                adminFilter === "reasoning" ? "bg-purple-600 text-white font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <span>🧠</span> Reasoning
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminFilter("vision")}
+              className={cn(
+                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
+                adminFilter === "vision" ? "bg-primary text-primary-foreground font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <span>👁️</span> Vision
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdminFilter("highctx")}
+              className={cn(
+                "shelf-chip rounded-md px-2 py-1 transition text-xs flex items-center gap-1",
+                adminFilter === "highctx" ? "bg-cyan-600 text-white font-medium" : "bg-muted text-muted-foreground hover:bg-accent"
+              )}
+            >
+              <span>⚡</span> 1M+ Ctx
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <Input
+              id="direct-model-input"
+              value={directModelInput}
+              onChange={(e) => setDirectModelInput(e.target.value)}
+              placeholder="Direct model ID (e.g. kimi-k3, gpt-6-astra)..."
+              className="h-7 text-[11px] font-mono border-border/70 bg-muted/40"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && directModelInput.trim()) {
+                  const target = allModels.find(m => m.modelId === directModelInput.trim()) || {
+                    id: directModelInput.trim(),
+                    modelId: directModelInput.trim(),
+                    displayName: directModelInput.trim(),
+                    type: "CHAT" as const,
+                    inputModalities: ["TEXT"],
+                    outputModalities: ["TEXT"],
+                    abilities: [],
+                  };
+                  void handleSelectModel(target as any);
+                  setDirectModelInput("");
+                }
+              }}
+            />
+            <Button
+              id="direct-model-switch-btn"
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-[11px] font-mono shrink-0"
+              disabled={!directModelInput.trim()}
+              onClick={() => {
+                const target = allModels.find(m => m.modelId === directModelInput.trim()) || {
+                  id: directModelInput.trim(),
+                  modelId: directModelInput.trim(),
+                  displayName: directModelInput.trim(),
+                  type: "CHAT" as const,
+                  inputModalities: ["TEXT"],
+                  outputModalities: ["TEXT"],
+                  abilities: [],
+                };
+                void handleSelectModel(target as any);
+                setDirectModelInput("");
+              }}
+            >
+              Set
+            </Button>
           </div>
 
           {error ? (
@@ -463,7 +607,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
 
                 <div className="min-h-0 flex-1 overflow-hidden rounded-[var(--radius-card)] border border-border/70 bg-muted/30 p-2">
                   <ScrollArea className="h-full min-h-0">
-                    <div className="space-y-1">
+                    <div id="modal-models-list" className="space-y-1">
                       {displayedModels.map((model) => (
                         <ModelOptionRow
                           key={model.id}

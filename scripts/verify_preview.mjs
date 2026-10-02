@@ -149,14 +149,20 @@ async function runPreviewVerification() {
   console.log("Testing Scenario action: open-model-picker...");
   await evalCode("document.querySelector('[data-action=\"open-model-picker\"]').click()");
   await new Promise(r => setTimeout(r, 500));
-  const modalActive = await evalCode("document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
+  const modalActive = await evalCode(`(() => {
+    const el = document.getElementById('mobile-iframe')?.contentDocument?.getElementById('model-picker-modal');
+    return !!(el && (el.getAttribute('data-state') === 'open' || el.classList.contains('active') || el.offsetParent !== null));
+  })()`);
   console.log(`Admin Model Registry modal opened inside iframe: ${modalActive}`);
 
   // Check 7a: Trigger Hardware Back Key on phone frame
   console.log("Testing Simulated Android Hardware Back Key...");
   await evalCode("document.getElementById('nav-btn-back').click()");
   await new Promise(r => setTimeout(r, 400));
-  const modalClosed = await evalCode("!document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
+  const modalClosed = await evalCode(`(() => {
+    const el = document.getElementById('mobile-iframe')?.contentDocument?.getElementById('model-picker-modal');
+    return !el || el.getAttribute('data-state') === 'closed';
+  })()`);
   console.log(`Android Back key closed modal inside iframe: ${modalClosed}`);
 
   // Check 7b: Re-open modal and test Escape key INSIDE IFRAME
@@ -168,7 +174,10 @@ async function runPreviewVerification() {
     iDoc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   })()`);
   await new Promise(r => setTimeout(r, 400));
-  const modalClosedViaEsc = await evalCode("!document.getElementById('mobile-iframe').contentDocument.getElementById('model-picker-modal')?.classList.contains('active')");
+  const modalClosedViaEsc = await evalCode(`(() => {
+    const el = document.getElementById('mobile-iframe')?.contentDocument?.getElementById('model-picker-modal');
+    return !el || el.getAttribute('data-state') === 'closed';
+  })()`);
   console.log(`Inside-iframe Escape key closed modal: ${modalClosedViaEsc}`);
   if (!modalClosedViaEsc) throw new Error("Escape key inside iframe failed to trigger back bridge!");
 
