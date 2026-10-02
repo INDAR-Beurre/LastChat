@@ -454,8 +454,10 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
         id="model-picker-modal"
         align="end"
         side="top"
-        sideOffset={6}
-        className="w-[min(96vw,32rem)] max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden shadow-2xl border-border/50 bg-background/95 backdrop-blur-3xl"
+        sideOffset={8}
+        collisionPadding={12}
+        avoidCollisions={true}
+        className="w-[min(calc(100vw-24px),32rem)] max-h-[min(84vh,36rem)] flex flex-col gap-0 p-0 overflow-hidden shadow-2xl border-border/50 bg-background/95 backdrop-blur-3xl"
       >
         <PopoverHeader className="px-4 pt-3.5 pb-2.5 border-b border-border/30 bg-muted/10">
           <div className="flex items-center justify-between">
@@ -604,8 +606,8 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
               id="direct-model-input"
               value={directModelInput}
               onChange={(e) => setDirectModelInput(e.target.value)}
-              placeholder="Direct model ID (e.g. kimi-k3, gpt-6-astra)..."
-              className="h-7 text-[11px] font-mono border-border/70 bg-muted/40"
+              placeholder="Direct model ID (e.g. kimi-k3, gpt-6)..."
+              className="h-7 text-[11px] font-mono border-border/70 bg-muted/40 min-w-0 flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && directModelInput.trim()) {
                   const target = allModels.find(m => m.modelId === directModelInput.trim()) || {
@@ -624,6 +626,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
             />
             <Button
               id="direct-model-switch-btn"
+              data-no-touch-enforce
               type="button"
               size="sm"
               variant="outline"
@@ -653,21 +656,22 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
             </div>
           ) : null}
 
-          <div className="h-[24rem]">
+          <div className="flex flex-col flex-1 min-h-0 max-h-[46vh] sm:max-h-[22rem]">
             {sections.length === 0 && favoriteModels.length === 0 ? (
               <div className="rounded-[var(--radius-card)] border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground">
                 {t("model_list.empty")}
               </div>
             ) : (
-              <div className="flex h-full min-h-0 flex-col gap-3">
-                <div className="overflow-hidden rounded-[var(--radius-card)] border border-border/70 bg-muted/45 p-2">
-                  <ScrollArea className="max-h-20 w-full">
-                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
+              <div className="flex h-full min-h-0 flex-col gap-2.5">
+                <div className="overflow-hidden rounded-[var(--radius-card)] border border-border/70 bg-muted/45 p-1.5">
+                  <ScrollArea className="max-h-16 w-full">
+                    <div className="flex flex-wrap items-center gap-1.5 pb-0.5">
                       {favoriteModels.length > 0 && (
                         <button
                           type="button"
+                          data-no-touch-enforce
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs transition hover:bg-accent",
+                            "shelf-chip inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs transition hover:bg-accent",
                             isFavoriteSectionSelected && "border-primary/25 bg-primary/10 text-primary",
                           )}
                           onClick={() => {
@@ -685,8 +689,9 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                           <button
                             key={section.providerId}
                             type="button"
+                            data-no-touch-enforce
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs transition hover:bg-accent",
+                              "shelf-chip inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs transition hover:bg-accent",
                               selected && "border-primary/25 bg-primary/10 text-primary",
                             )}
                             onClick={() => {

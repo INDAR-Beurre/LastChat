@@ -653,13 +653,7 @@ async function generateAssistantResponse(convId, asstNode, prompt, modelId) {
       }
 
       const textChunks = [
-        `### LastLab Mobile Workbench Active\n\n`,
-        `Successfully routed your request through the **Relay Gateway** (\`@model-aggregator\`) using model **\`${modelId}\`**.\n\n`,
-        `#### Key Verification Highlights:\n`,
-        `- **Exclusive Provider**: \`https://relay-gw.pages.dev/v1\`\n`,
-        `- **Active Model**: \`${modelId}\`\n`,
-        `- **Rendering Engine**: Authentic LastChat Markdown + KaTeX + Shiki\n`,
-        `- **Client Stack**: React 19 • Tailwind CSS v4 • Motion • Radix UI\n\n`,
+        `Routed via **Relay Gateway** (\`@model-aggregator\`) using model **\`${modelId}\`**:\n\n`,
         `\`\`\`kotlin\n`,
         `// LastLab Native Android Integration\n`,
         `suspend fun executeRelayStream(model: String, prompt: String) = coroutineScope {\n`,

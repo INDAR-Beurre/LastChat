@@ -140,21 +140,14 @@ function getNerdStats(
     icon: <ArrowUp className="size-3" />,
     label:
       usage.cachedTokens > 0
-        ? t("chat_message.prompt_tokens_with_cache", {
-            promptTokens: formatNumber(usage.promptTokens),
-            cachedTokens: formatNumber(usage.cachedTokens),
-          })
-        : t("chat_message.prompt_tokens", {
-            promptTokens: formatNumber(usage.promptTokens),
-          }),
+        ? `${formatNumber(usage.promptTokens)} tok (${formatNumber(usage.cachedTokens)} c)`
+        : `${formatNumber(usage.promptTokens)} tok`,
   });
 
   stats.push({
     key: "completion",
     icon: <ArrowDown className="size-3" />,
-    label: t("chat_message.completion_tokens", {
-      completionTokens: formatNumber(usage.completionTokens),
-    }),
+    label: `${formatNumber(usage.completionTokens)} tok`,
   });
 
   const durationMs = getDurationMs(createdAt, finishedAt);
@@ -530,7 +523,7 @@ export const ChatMessageNerdLineRow = React.memo(({
 }) => {
   const { t } = useTranslation("message");
 
-  if (!displaySetting?.showTokenUsage || !message.usage) {
+  if (!message.usage || displaySetting?.showTokenUsage === false) {
     return null;
   }
 
@@ -553,14 +546,14 @@ export const ChatMessageNerdLineRow = React.memo(({
   return (
     <div
       className={cn(
-        "flex w-full flex-wrap items-center gap-1.5 pt-0.5 text-[10px]",
+        "flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[10px]",
         alignRight ? "justify-end" : "justify-start",
       )}
     >
       {stats.map((item) => (
         <span
           key={item.key}
-          className="telemetry-badge nerd-badge"
+          className="telemetry-badge nerd-badge shrink-0"
           data-no-touch-enforce
         >
           {item.icon}
@@ -569,9 +562,10 @@ export const ChatMessageNerdLineRow = React.memo(({
       ))}
       <button
         type="button"
+        id="inspect-raw-btn"
         data-no-touch-enforce
         onClick={handleOpenInspector}
-        className="telemetry-badge nerd-badge cursor-pointer border-primary/30 text-primary hover:bg-primary/10 active:scale-[0.96]"
+        className="telemetry-badge nerd-badge shrink-0 cursor-pointer border-primary/30 text-primary hover:bg-primary/10 active:scale-[0.96]"
         title="Inspect raw protocol, cURL, and latency telemetry"
       >
         <Terminal className="size-2.5" />

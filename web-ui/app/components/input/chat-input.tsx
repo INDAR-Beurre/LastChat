@@ -1145,7 +1145,7 @@ function ChatInputInner({
             </Button>
           </motion.div>
         </motion.div>
-        <p className="mt-1 text-center text-[11px] leading-4 text-muted-foreground">{sendHint}</p>
+        <p className="mt-1 hidden text-center text-[11px] leading-4 text-muted-foreground sm:block">{sendHint}</p>
         {error ? <p className="mt-0.5 text-center text-xs text-destructive">{error}</p> : null}
       </div>
     </div>

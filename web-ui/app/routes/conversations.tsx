@@ -1074,13 +1074,8 @@ function ConversationsPageInner() {
   }, [hasWorkbenchPanel, isMobile, panel]);
 
   const chatContent = (
-    <div
-      className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden bg-background pt-12",
-        isNewChat && selectedNodeMessages.length === 0 && "justify-center",
-      )}
-    >
-      {(!isNewChat || selectedNodeMessages.length > 0) && (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background pt-12">
+      {(!isNewChat || selectedNodeMessages.length > 0) ? (
         <div className="relative flex min-h-0 flex-1">
           <ConversationTimeline
             activeId={activeId}
@@ -1100,16 +1095,13 @@ function ConversationsPageInner() {
             onToolApproval={handleToolApproval}
           />
         </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-4">
+          <ConversationGreeting />
+        </div>
       )}
 
       <div className={cn("relative z-10 pb-3 sm:pb-3.5", CHAT_PAGE_PADDING_CLASSNAME)}>
-        {isNewChat && selectedNodeMessages.length === 0 && (
-          <div className="mx-auto mb-6 max-w-2xl text-center">
-            <p className="text-lg text-muted-foreground">
-              <ConversationGreeting />
-            </p>
-          </div>
-        )}
         <ChatInput
           value={inputText}
           attachments={inputAttachments}
@@ -1177,13 +1169,13 @@ function ConversationsPageInner() {
         <div className="pointer-events-none absolute top-1.5 inset-x-2 sm:inset-x-3 z-20 flex items-center justify-between">
           <div className="pointer-events-auto flex items-center gap-2">
             <SidebarTrigger className="rounded-full border border-border/70 bg-background/90 text-foreground shadow-sm backdrop-blur hover:bg-accent" />
-            <div className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground backdrop-blur-md shadow-xs">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-foreground backdrop-blur-md shadow-xs">
               <span className="relative flex size-1.5">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
               </span>
-              <span>LastLab</span>
-              <span className="text-[10px] text-muted-foreground font-mono">@model-aggregator</span>
+              <span className="font-semibold tracking-wide">LastLab</span>
+              <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono">@model-aggregator</span>
             </div>
           </div>
 

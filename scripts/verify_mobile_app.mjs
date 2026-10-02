@@ -181,26 +181,34 @@ async function runVerification() {
   })()`);
 
   console.log("Waiting for streaming reasoning and response...");
-  for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 300));
+  let streamStarted = false;
+  for (let i = 0; i < 25; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    streamStarted = await evalCode(`!!document.querySelector('[data-message-role="assistant"]')`);
+    if (streamStarted) break;
+  }
+  console.log(`Stream started: ${streamStarted}`);
+
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 200));
     const generating = await evalCode(`(() => {
-      const stopBtn = document.querySelector('button#send-message-btn.bg-destructive') || document.querySelector('svg.lucide-square');
-      return !!stopBtn;
+      const stopBtn = document.querySelector('button#send-message-btn.bg-destructive');
+      const isLoading = document.querySelector('[data-message-loading="true"]');
+      return !!(stopBtn || isLoading);
     })()`);
-    if (!generating && i > 3) {
-      console.log(`Stream generation completed in ~${(i + 1) * 300}ms`);
+    if (!generating && streamStarted) {
+      console.log(`Stream generation completed in ~${(i + 1) * 200}ms`);
       break;
     }
   }
 
-  // Ensure code block and telemetry are scrolled into clear view
+  // Align reasoning trace and code block into view with top bar padding offset
   await evalCode(`(() => {
-    const codeBlock = document.querySelector('.code-block-container') || document.querySelector('pre') || document.querySelector('.telemetry-badge');
-    if (codeBlock) {
-      codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
-    } else {
-      const assistant = document.querySelector('[data-message-role="assistant"]') || document.querySelectorAll('.chat-turn')[1];
-      assistant?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    const reasoning = document.querySelector('[data-part="reasoning"]') || document.querySelector('[data-message-role="assistant"]');
+    if (reasoning) {
+      reasoning.scrollIntoView({ behavior: 'instant', block: 'start' });
+      const log = document.querySelector('[role="log"]');
+      if (log) log.scrollTop = Math.max(0, log.scrollTop - 54);
     }
   })()`);
   await new Promise(r => setTimeout(r, 500));
@@ -216,13 +224,32 @@ async function runVerification() {
   }, sessionId);
   await new Promise(r => setTimeout(r, 500));
   await evalCode(`(() => {
-    const codeBlock = document.querySelector('.code-block-container') || document.querySelector('pre') || document.querySelector('.telemetry-badge');
-    if (codeBlock) {
-      codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
+    const log = document.querySelector('[role="log"]');
+    if (log) {
+      log.scrollTop = log.scrollHeight;
     }
   })()`);
   await new Promise(r => setTimeout(r, 400));
   await takeScreenshot("verify_mobile_compact_360.png");
+
+  // Check 6: Hyperparameter Tuning Bottom Sheet
+  console.log("Testing Hyperparameter Tuning Bottom Sheet...");
+  await evalCode("window.dispatchEvent(new CustomEvent('lastlab:open-tuning'))");
+  await new Promise(r => setTimeout(r, 500));
+  const tuningActive = await evalCode("!!document.getElementById('playground-tuning-drawer')");
+  console.log(`Tuning sheet opened: ${tuningActive}`);
+  await evalCode("(window.LastLabApp || window.LastChatApp)?.onBackPressed() || document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
+  await new Promise(r => setTimeout(r, 400));
+
+  // Check 7: Raw Protocol & Telemetry Inspector Dialog
+  console.log("Testing Raw Protocol & Telemetry Inspector Dialog...");
+  await evalCode("document.getElementById('inspect-raw-btn')?.click() || window.dispatchEvent(new CustomEvent('lastlab:open-inspector'))");
+  await new Promise(r => setTimeout(r, 500));
+  const inspectorActive = await evalCode("!!document.getElementById('raw-inspector-modal')");
+  console.log(`Raw Inspector dialog opened: ${inspectorActive}`);
+  if (!inspectorActive) throw new Error("Failed to open Raw Inspector dialog!");
+  await evalCode("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
+  await new Promise(r => setTimeout(r, 400));
 
   console.log("=== Mobile App Verification Completed Successfully! ===");
   browser.kill();

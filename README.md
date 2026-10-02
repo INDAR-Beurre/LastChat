@@ -151,7 +151,7 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 | **Target SDK** | `33` (Android 13 / 14) | Full modern Android compliance |
 | **Minimum SDK** | `24` (Android 7.0 Nougat) | Broad hardware compatibility |
 | **Binary Size** | **2.0 MB** (`2,023,044` bytes) | Bundles authentic React 19 production build |
-| **SHA-256 Checksum** | `0918dff629abb0ce872bf850e23cf7af667f4024c906796651ce70fbaacf8fc3` | Cryptographic SHA-256 integrity hash |
+| **SHA-256 Checksum** | `f4ee18795104c34021c822080a2dbb67bc4ac46458398c453c6c8f750616b61b` | Cryptographic SHA-256 integrity hash |
 | **Signature Schemes** | `v1 + v2 + v3` | Dual JAR & APK Signature Scheme v2/v3 verified |
 
 ---

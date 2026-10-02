@@ -752,16 +752,16 @@
   }
 }
 
-/* Mobile touch target enforcement: min 44px on narrow viewports */
+/* Mobile touch target enforcement: ensure primary interactive controls meet 44-48px touch standards */
 @media (max-width: 480px) {
-  button:not([data-no-touch-enforce]),
-  [role="button"]:not([data-no-touch-enforce]),
-  a:not([data-no-touch-enforce]) {
+  .touch-target-primary,
+  .model-row,
+  .scenario-btn,
+  [data-slot="sidebar-trigger"] {
     min-height: 44px;
-    min-width: 44px;
   }
 
-  /* Exempt compact inline elements */
+  /* Compact controls retain intentional compact proportions */
   .shelf-chip,
   .seg-btn,
   .code-block-copy,

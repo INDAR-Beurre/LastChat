@@ -95,7 +95,7 @@ async function runPreviewVerification() {
       const iDoc = document.getElementById('mobile-iframe')?.contentDocument;
       if (iDoc) {
         iDoc.querySelectorAll('.toast, .toast-container').forEach(t => t.remove());
-        const assistantTurn = iDoc.querySelector('.chat-turn.assistant');
+        const assistantTurn = iDoc.querySelector('[data-message-role="assistant"]') || iDoc.querySelector('.chat-turn.assistant');
         if (assistantTurn) assistantTurn.scrollIntoView({ behavior: 'instant', block: 'start' });
       }
     })()`);
@@ -184,29 +184,39 @@ async function runPreviewVerification() {
   // Check 8: Test Scenario - Inject Reasoning & Kotlin Snippet
   console.log("Testing Scenario action: inject-reasoning...");
   await evalCode("document.querySelector('[data-action=\"inject-reasoning\"]').click()");
-  for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 300));
+  
+  let streamStarted = false;
+  for (let i = 0; i < 25; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    streamStarted = await evalCode(`(() => {
+      const doc = document.getElementById('mobile-iframe')?.contentDocument;
+      return !!doc?.querySelector('[data-message-role=\"assistant\"]');
+    })()`);
+    if (streamStarted) break;
+  }
+  console.log(`Stream started: ${streamStarted}`);
+
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 200));
     const generating = await evalCode(`(() => {
       const doc = document.getElementById('mobile-iframe')?.contentDocument;
-      const stopBtn = doc?.querySelector('button#send-message-btn.bg-destructive') || doc?.querySelector('svg.lucide-square');
-      return !!stopBtn;
+      const stopBtn = doc?.querySelector('button#send-message-btn.bg-destructive');
+      const isLoading = doc?.querySelector('[data-message-loading=\"true\"]');
+      return !!(stopBtn || isLoading);
     })()`);
-    if (!generating && i > 3) {
-      console.log(`Simulator stream generation completed in ~${(i + 1) * 300}ms`);
+    if (!generating && streamStarted) {
+      console.log(`Simulator stream generation completed in ~${(i + 1) * 200}ms`);
       break;
     }
   }
 
-  // Ensure code block and telemetry inside simulated phone are scrolled into clear view
+  // Ensure completed assistant message and telemetry badges are cleanly visible
   await evalCode(`(() => {
     const doc = document.getElementById('mobile-iframe')?.contentDocument;
     if (doc) {
-      const codeBlock = doc.querySelector('.code-block-container') || doc.querySelector('pre') || doc.querySelector('.telemetry-badge');
-      if (codeBlock) {
-        codeBlock.scrollIntoView({ behavior: 'instant', block: 'center' });
-      } else {
-        const assistant = doc.querySelector('[data-message-role="assistant"]') || doc.querySelectorAll('.chat-turn')[1];
-        assistant?.scrollIntoView({ behavior: 'instant', block: 'start' });
+      const assistant = doc.querySelector('[data-message-role=\"assistant\"]');
+      if (assistant) {
+        assistant.scrollIntoView({ behavior: 'instant', block: 'start' });
       }
     }
   })()`);

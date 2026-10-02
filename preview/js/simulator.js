@@ -262,7 +262,11 @@
 
     switch (action) {
       case 'switch-chat':
-        app.switchToView('chat-view');
+        if (typeof app?.switchToView === 'function') {
+          app.switchToView('chat-view');
+        } else {
+          doc?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        }
         addLog('info', 'Navigated to Chat view.');
         break;
 
@@ -276,17 +280,31 @@
         break;
 
       case 'switch-tuning':
-        app.switchToView('tuning-view');
+        if (typeof app?.openTuning === 'function') {
+          app.openTuning();
+        } else if (typeof app?.switchToView === 'function') {
+          app.switchToView('tuning-view');
+        } else {
+          win.dispatchEvent(new CustomEvent('lastlab:open-tuning'));
+        }
         addLog('info', 'Navigated to Hyperparameter Tuning view.');
         break;
 
       case 'switch-admin':
-        app.switchToView('admin-view');
+        if (typeof app?.openModelPicker === 'function') {
+          app.openModelPicker();
+        } else {
+          doc?.getElementById('model-trigger-btn')?.click();
+        }
         addLog('info', 'Navigated to Admin Gateway & Provider Matrix view.');
         break;
 
       case 'open-inspector':
-        doc?.getElementById('inspect-raw-btn')?.click();
+        if (typeof app?.openInspector === 'function') {
+          app.openInspector();
+        } else {
+          win.dispatchEvent(new CustomEvent('lastlab:open-inspector'));
+        }
         addLog('info', 'Opened Raw JSON / Telemetry Inspector.');
         break;
 
@@ -610,22 +628,20 @@
       setTimeout(() => dom.frame.style.filter = 'none', 180);
 
       const doc = dom.iframe.contentDocument;
-      const isModalOpen = doc?.getElementById('model-picker-modal')?.classList.contains('active');
-      const isInspectorOpen = doc?.getElementById('inspector-modal')?.classList.contains('active');
-      const activePane = doc?.querySelector('.view-pane.active')?.id || 'chat-view';
+      const isModalOpen = doc?.getElementById('model-picker-modal')?.getAttribute('data-state') === 'open' || doc?.getElementById('model-picker-modal')?.classList.contains('active');
+      const isInspectorOpen = doc?.getElementById('raw-inspector-modal')?.getAttribute('data-state') === 'open' || doc?.getElementById('inspector-modal')?.classList.contains('active');
+      const isTuningOpen = doc?.getElementById('playground-tuning-drawer')?.getAttribute('data-state') === 'open';
 
       let imageSrc = '/dist/verify_mobile_chat_turn.png';
       if (isModalOpen) {
         imageSrc = '/dist/verify_mobile_model_picker.png';
       } else if (isInspectorOpen) {
         imageSrc = '/dist/verify_mobile_inspector.png';
-      } else if (activePane === 'tuning-view') {
+      } else if (isTuningOpen) {
         imageSrc = '/dist/verify_mobile_tuning_view.png';
-      } else if (activePane === 'admin-view') {
-        imageSrc = '/dist/verify_mobile_admin_view.png';
       } else {
-        const hasMessages = doc?.querySelectorAll('.chat-turn')?.length > 0;
-        imageSrc = hasMessages ? '/dist/verify_mobile_chat_turn.png' : '/dist/verify_mobile_chat_empty.png';
+        const hasMessages = doc?.querySelectorAll('[data-message-role]')?.length > 0 || doc?.querySelectorAll('.chat-turn')?.length > 0;
+        imageSrc = hasMessages ? '/dist/verify_mobile_reasoning_and_code.png' : '/dist/verify_mobile_chat_empty.png';
       }
 
       const link = document.createElement('a');
