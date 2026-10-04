@@ -17,8 +17,8 @@
 <br>
 
 <p align="center">
-  <a href="dist/lastlab.apk">
-    <img src="https://img.shields.io/badge/⬇️%20Download-lastlab.apk-0284c7?style=for-the-badge" alt="Download APK" />
+  <a href="https://github.com/INDAR-Beurre/LastChat/releases/latest">
+    <img src="https://img.shields.io/badge/⬇️%20GitHub%20Release-v1.5.0%20(APKs)-0284c7?style=for-the-badge&logo=github&logoColor=white" alt="Download Release" />
   </a>
   &nbsp;&nbsp;
   <a href="#-preview-anywhere-mobile-studio-simulator">
@@ -144,7 +144,9 @@ The production release is pre-compiled, zipalign-optimized, and cryptographicall
 
 | Property | Value | Notes |
 | :--- | :--- | :--- |
-| **Primary APK** | [`dist/lastlab.apk`](dist/lastlab.apk) | Standalone signed production package |
+| **Official Release** | [**v1.5.0 Release Page**](https://github.com/INDAR-Beurre/LastChat/releases/tag/v1.5.0) | Direct download for all APK assets |
+| **Primary APK** | [`dist/lastlab.apk`](https://github.com/INDAR-Beurre/LastChat/releases/download/v1.5.0/lastlab.apk) | Standalone signed production package (2.0 MB) |
+| **Full Native APK** | [`lastlab-native-arm64-v8a.apk`](https://github.com/INDAR-Beurre/LastChat/releases/download/v1.5.0/lastlab-native-arm64-v8a.apk) | Full Compose Multiplatform native release (165 MB) |
 | **Package ID** | `me.rerere.lastlab` | Clean independent Android namespace |
 | **Launch Activity** | `com.relay.lastlab.MainActivity` | Native activity entry point |
 | **Application Label** | `LastLab` | System launcher display name |
