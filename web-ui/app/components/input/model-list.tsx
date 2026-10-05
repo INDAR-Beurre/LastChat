@@ -114,9 +114,9 @@ function ModelOptionRow({
         }
       }}
     >
-      <AIIcon 
-        name={model.modelId} 
-        size={24} 
+      <AIIcon
+        name={model.modelId}
+        size={24}
         iconUrl={model.iconUrl}
         customIconUri={model.customIconUri}
         providerSlug={model.providerSlug}
@@ -131,7 +131,10 @@ function ModelOptionRow({
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1">
           {ctxLabel && (
-            <Badge variant="outline" className="px-1 py-0 text-[9px] font-mono border-cyan-500/40 text-cyan-400 bg-cyan-500/10">
+            <Badge
+              variant="outline"
+              className="px-1 py-0 text-[9px] font-mono border-cyan-500/40 text-cyan-400 bg-cyan-500/10"
+            >
               {ctxLabel}
             </Badge>
           )}
@@ -139,10 +142,15 @@ function ModelOptionRow({
             {formatModality(model)}
           </Badge>
           {abilities.map((ability) => (
-            <Badge key={ability} variant="secondary" className={cn(
-              "px-1 py-0 text-[9px]",
-              ability === "REASONING" && "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-            )}>
+            <Badge
+              key={ability}
+              variant="secondary"
+              className={cn(
+                "px-1 py-0 text-[9px]",
+                ability === "REASONING" &&
+                  "bg-purple-500/20 text-purple-300 border border-purple-500/30",
+              )}
+            >
               {getAbilityLabel(ability, t)}
             </Badge>
           ))}
@@ -239,7 +247,10 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
 
     return sections.find((section) => section.providerId === selectedProviderId) ?? sections[0];
   }, [sections, selectedProviderId]);
-  const filteredModels = React.useMemo(() => sections.flatMap((section) => section.models), [sections]);
+  const filteredModels = React.useMemo(
+    () => sections.flatMap((section) => section.models),
+    [sections],
+  );
 
   const [adminFilter, setAdminFilter] = React.useState<
     "all" | "reasoning" | "vision" | "highctx" | "fast" | "favorites"
@@ -256,7 +267,8 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
       const elapsed = Math.round(performance.now() - start);
       setPingLatencyMs(elapsed);
     } catch {
-      setPingLatencyMs(38);
+      // The probe failed, so there is no measurement to report.
+      setPingLatencyMs(null);
     } finally {
       setIsPinging(false);
     }
@@ -268,7 +280,9 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
       .filter((model): model is ProviderModel => model !== undefined);
   }, [favoriteModelIds, filteredModels]);
   const isFavoriteSectionSelected = selectedProviderId === FAVORITE_SECTION_ID;
-  const rawDisplayedModels = isFavoriteSectionSelected ? favoriteModels : (selectedSection?.models ?? []);
+  const rawDisplayedModels = isFavoriteSectionSelected
+    ? favoriteModels
+    : (selectedSection?.models ?? []);
 
   const displayedModels = React.useMemo(() => {
     return rawDisplayedModels.filter((model) => {
@@ -279,10 +293,14 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
         );
       }
       if (adminFilter === "vision") {
-        return (model.inputModalities ?? []).includes("IMAGE") || /image|vision/i.test(model.modelId);
+        return (
+          (model.inputModalities ?? []).includes("IMAGE") || /image|vision/i.test(model.modelId)
+        );
       }
       if (adminFilter === "highctx") {
-        return (model.contextWindowTokens ?? 0) >= 1_000_000 || /mimo|gemini|qwen/i.test(model.modelId);
+        return (
+          (model.contextWindowTokens ?? 0) >= 1_000_000 || /mimo|gemini|qwen/i.test(model.modelId)
+        );
       }
       if (adminFilter === "fast") {
         return /flash|instant|fast|mini/i.test(model.modelId);
@@ -324,13 +342,21 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
       return;
     }
 
-    if (selectedProviderId && sections.some((section) => section.providerId === selectedProviderId)) {
+    if (
+      selectedProviderId &&
+      sections.some((section) => section.providerId === selectedProviderId)
+    ) {
       return;
     }
 
     const currentModelSection =
-      currentModelId == null ? null : sections.find((section) => section.models.some((model) => model.id === currentModelId));
-    setSelectedProviderId(currentModelSection?.providerId ?? (favoriteModels.length > 0 ? FAVORITE_SECTION_ID : sections[0]?.providerId ?? null));
+      currentModelId == null
+        ? null
+        : sections.find((section) => section.models.some((model) => model.id === currentModelId));
+    setSelectedProviderId(
+      currentModelSection?.providerId ??
+        (favoriteModels.length > 0 ? FAVORITE_SECTION_ID : (sections[0]?.providerId ?? null)),
+    );
   }, [currentModelId, favoriteModels.length, open, sections, selectedProviderId]);
 
   React.useEffect(() => {
@@ -364,9 +390,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
         setOpen(false);
       } catch (changeError) {
         const message =
-          changeError instanceof Error
-            ? changeError.message
-            : t("model_list.switch_model_failed");
+          changeError instanceof Error ? changeError.message : t("model_list.switch_model_failed");
         setError(message);
       } finally {
         setUpdatingModelId(null);
@@ -495,7 +519,9 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                       : "⚡ Ping"}
                 </span>
               </button>
-              <span className="text-[9px] text-muted-foreground/60 font-mono hidden sm:inline">relay-gw.pages.dev</span>
+              <span className="text-[9px] text-muted-foreground/60 font-mono hidden sm:inline">
+                relay-gw.pages.dev
+              </span>
             </div>
           </div>
           <PopoverDescription className="text-[11px] text-muted-foreground/80 mt-0.5">
@@ -610,7 +636,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
               className="h-7 text-[11px] font-mono border-border/70 bg-muted/40 min-w-0 flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && directModelInput.trim()) {
-                  const target = allModels.find(m => m.modelId === directModelInput.trim()) || {
+                  const target = allModels.find((m) => m.modelId === directModelInput.trim()) || {
                     id: directModelInput.trim(),
                     modelId: directModelInput.trim(),
                     displayName: directModelInput.trim(),
@@ -633,7 +659,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
               className="h-7 px-2.5 text-[11px] font-mono shrink-0"
               disabled={!directModelInput.trim()}
               onClick={() => {
-                const target = allModels.find(m => m.modelId === directModelInput.trim()) || {
+                const target = allModels.find((m) => m.modelId === directModelInput.trim()) || {
                   id: directModelInput.trim(),
                   modelId: directModelInput.trim(),
                   displayName: directModelInput.trim(),
@@ -672,13 +698,16 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                           data-no-touch-enforce
                           className={cn(
                             "shelf-chip inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs transition hover:bg-accent",
-                            isFavoriteSectionSelected && "border-primary/25 bg-primary/10 text-primary",
+                            isFavoriteSectionSelected &&
+                              "border-primary/25 bg-primary/10 text-primary",
                           )}
                           onClick={() => {
                             setSelectedProviderId(FAVORITE_SECTION_ID);
                           }}
                         >
-                          <Heart className={cn("size-3", isFavoriteSectionSelected && "fill-current")} />
+                          <Heart
+                            className={cn("size-3", isFavoriteSectionSelected && "fill-current")}
+                          />
                           <span>{t("model_list.favorites")}</span>
                         </button>
                       )}

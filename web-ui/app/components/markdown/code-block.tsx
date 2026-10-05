@@ -4,11 +4,7 @@ import type { ComponentProps, CSSProperties, HTMLAttributes } from "react";
 import { Check, ChevronDown, ChevronUp, Copy, Download } from "~/lib/material-icons";
 import { createJavaScriptRegexEngine } from "@shikijs/engine-javascript";
 import { useTranslation } from "react-i18next";
-import {
-  createBundledHighlighter,
-  type HighlighterGeneric,
-  type ThemedToken,
-} from "shiki/core";
+import { createBundledHighlighter, type HighlighterGeneric, type ThemedToken } from "shiki/core";
 import langBash from "shiki/dist/langs/bash.mjs";
 import langC from "shiki/dist/langs/c.mjs";
 import langCpp from "shiki/dist/langs/cpp.mjs";

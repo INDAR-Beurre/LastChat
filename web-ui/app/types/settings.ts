@@ -198,5 +198,13 @@ export interface Settings {
   mcpServers: McpServerConfig[];
   searchServices: SearchServiceOption[];
   searchServiceSelected: number;
+  /** Whether a Relay Gateway key is stored in the backend. */
+  gatewayConfigured: boolean;
+  /** The stored key as the backend masks it, e.g. `sk-…xyz`; never the key itself. */
+  gatewayKeyMasked?: string | null;
+  /** True when the model list is a cached copy because the relay could not be reached. */
+  catalogStale: boolean;
+  /** Why the catalog is stale, or null when it is live. */
+  catalogError?: string | null;
   [key: string]: unknown;
 }

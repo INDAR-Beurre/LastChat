@@ -117,12 +117,17 @@
 /* Code Block with Header */
 .markdown .code-block {
   @apply my-4 overflow-hidden rounded-[1.25rem] border border-border/50;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--card) 88%, transparent), color-mix(in srgb, var(--card) 95%, transparent));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card) 88%, transparent),
+    color-mix(in srgb, var(--card) 95%, transparent)
+  );
   box-shadow:
     0 16px 48px color-mix(in srgb, var(--foreground) 4%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--background) 50%, transparent);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .code-block-header {
@@ -281,7 +286,10 @@
 /* Citation Badge */
 .markdown .citation-badge {
   @apply inline-flex cursor-pointer items-center justify-center rounded-full px-1.5 py-1 font-mono text-[10px] leading-none no-underline transition-colors;
-  background-color: var(--markdown-citation-background, color-mix(in srgb, var(--primary) 15%, transparent));
+  background-color: var(
+    --markdown-citation-background,
+    color-mix(in srgb, var(--primary) 15%, transparent)
+  );
   color: var(--markdown-citation-foreground, var(--primary));
 }
 

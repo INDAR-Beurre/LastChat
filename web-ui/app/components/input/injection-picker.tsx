@@ -1,7 +1,17 @@
 import * as React from "react";
 
 import { useMutation } from "@tanstack/react-query";
-import { BookOpen, LoaderCircle, Code2, Image as ImageIcon, Palette, Wrench, Terminal, Search, Memory } from "~/lib/material-icons";
+import {
+  BookOpen,
+  LoaderCircle,
+  Code2,
+  Image as ImageIcon,
+  Palette,
+  Wrench,
+  Terminal,
+  Search,
+  Memory,
+} from "~/lib/material-icons";
 import { useTranslation } from "react-i18next";
 
 import { useCurrentAssistant } from "~/hooks/use-current-assistant";
@@ -37,15 +47,23 @@ export interface InjectionPickerButtonProps {
 function getSkillIcon(iconName: string | null | undefined) {
   if (!iconName) return null;
   switch (iconName.toLowerCase()) {
-    case "code": return Code2;
-    case "image": return ImageIcon;
-    case "palette": return Palette;
-    case "terminal": return Terminal;
+    case "code":
+      return Code2;
+    case "image":
+      return ImageIcon;
+    case "palette":
+      return Palette;
+    case "terminal":
+      return Terminal;
     case "build":
-    case "wrench": return Wrench;
-    case "search": return Search;
-    case "memory": return Memory;
-    default: return BookOpen;
+    case "wrench":
+      return Wrench;
+    case "search":
+      return Search;
+    case "memory":
+      return Memory;
+    default:
+      return BookOpen;
   }
 }
 
@@ -272,7 +290,9 @@ export function InjectionPickerButton({
           type="button"
           variant="ghost"
           size="sm"
-          disabled={!canUse || updateModeInjectionsMutation.isPending || updateLorebooksMutation.isPending}
+          disabled={
+            !canUse || updateModeInjectionsMutation.isPending || updateLorebooksMutation.isPending
+          }
           className={cn(
             "h-9 rounded-full border border-border/70 bg-muted/70 px-2.5 text-foreground shadow-none hover:bg-accent hover:text-accent-foreground",
             selectedCount > 0 && "border-primary/20 bg-primary/10 text-primary hover:bg-primary/18",
@@ -351,7 +371,7 @@ export function InjectionPickerButton({
                           className={cn(
                             "flex cursor-pointer items-center gap-3 rounded-[var(--radius-card-inner)] border border-border/70 bg-background px-3 py-3 transition hover:bg-accent",
                             (checked || item.alwaysEnabled) && "border-primary/25 bg-primary/10",
-                            (item.enabled === false || item.alwaysEnabled) && "opacity-80"
+                            (item.enabled === false || item.alwaysEnabled) && "opacity-80",
                           )}
                         >
                           {switching ? (
@@ -359,36 +379,44 @@ export function InjectionPickerButton({
                           ) : (
                             <Checkbox
                               checked={checked || item.alwaysEnabled}
-                              disabled={disabled || updateModeInjectionsMutation.isPending || item.enabled === false || item.alwaysEnabled}
+                              disabled={
+                                disabled ||
+                                updateModeInjectionsMutation.isPending ||
+                                item.enabled === false ||
+                                item.alwaysEnabled
+                              }
                               onCheckedChange={(nextChecked) => {
                                 handleToggleModeInjection(item.id, Boolean(nextChecked));
                               }}
                             />
                           )}
-                        
-                        {(() => {
-                           const SkillIcon = getSkillIcon(item.icon);
-                           return SkillIcon ? <SkillIcon className="size-5 shrink-0 text-muted-foreground" /> : null;
-                        })()}
 
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">
-                            {getDisplayName(item.name, t("injection.unnamed_mode"))}
-                          </div>
-                          {typeof item.description === "string" && item.description.trim().length > 0 ? (
-                            <div className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-                              {item.description}
+                          {(() => {
+                            const SkillIcon = getSkillIcon(item.icon);
+                            return SkillIcon ? (
+                              <SkillIcon className="size-5 shrink-0 text-muted-foreground" />
+                            ) : null;
+                          })()}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-medium">
+                              {getDisplayName(item.name, t("injection.unnamed_mode"))}
                             </div>
-                          ) : null}
-                          {item.enabled === false ? (
-                            <div className="text-muted-foreground mt-0.5 text-xs text-destructive">
-                              {t("injection.disabled")}
-                            </div>
-                          ) : item.alwaysEnabled ? (
-                            <div className="text-muted-foreground mt-0.5 text-xs text-primary">
-                              {t("injection.always_enabled", "Always Enabled")}
-                            </div>
-                          ) : null}
+                            {typeof item.description === "string" &&
+                            item.description.trim().length > 0 ? (
+                              <div className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+                                {item.description}
+                              </div>
+                            ) : null}
+                            {item.enabled === false ? (
+                              <div className="text-muted-foreground mt-0.5 text-xs text-destructive">
+                                {t("injection.disabled")}
+                              </div>
+                            ) : item.alwaysEnabled ? (
+                              <div className="text-muted-foreground mt-0.5 text-xs text-primary">
+                                {t("injection.always_enabled", "Always Enabled")}
+                              </div>
+                            ) : null}
                           </div>
                         </label>
                       );
@@ -413,7 +441,7 @@ export function InjectionPickerButton({
                         className={cn(
                           "flex cursor-pointer items-center gap-3 rounded-[var(--radius-card-inner)] border border-border/70 bg-background px-3 py-3 transition hover:bg-accent",
                           checked && "border-primary/25 bg-primary/10",
-                          item.enabled === false && "opacity-80"
+                          item.enabled === false && "opacity-80",
                         )}
                       >
                         {switching ? (
@@ -421,7 +449,11 @@ export function InjectionPickerButton({
                         ) : (
                           <Checkbox
                             checked={checked}
-                            disabled={disabled || updateLorebooksMutation.isPending || item.enabled === false}
+                            disabled={
+                              disabled ||
+                              updateLorebooksMutation.isPending ||
+                              item.enabled === false
+                            }
                             onCheckedChange={(nextChecked) => {
                               handleToggleLorebook(item.id, Boolean(nextChecked));
                             }}
@@ -432,7 +464,8 @@ export function InjectionPickerButton({
                           <div className="truncate text-sm font-medium">
                             {getDisplayName(item.name, t("injection.unnamed_lorebook"))}
                           </div>
-                          {typeof item.description === "string" && item.description.trim().length > 0 ? (
+                          {typeof item.description === "string" &&
+                          item.description.trim().length > 0 ? (
                             <div className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
                               {item.description}
                             </div>

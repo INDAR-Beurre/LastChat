@@ -6,6 +6,7 @@ import type { TFunction } from "i18next";
 import { toast } from "sonner";
 import {
   Check,
+  Key,
   Laptop,
   Languages,
   Moon,
@@ -67,6 +68,7 @@ import {
 } from "~/components/theme-provider";
 import { ConversationSearchButton } from "~/components/conversation-search-button";
 import { CustomThemeDialog } from "~/components/custom-theme-dialog";
+import { GatewayKeyDialog, useGatewayKey } from "~/components/gateway-key-dialog";
 import Logo from "~/components/logo";
 import { getAssistantDisplayName } from "~/lib/display";
 import { clearWebAuthToken } from "~/services/api";
@@ -590,6 +592,8 @@ export const ConversationSidebar = React.memo(
 
     const [pickerOpen, setPickerOpen] = React.useState(false);
     const [customThemeOpen, setCustomThemeOpen] = React.useState(false);
+    const [gatewayKeyOpen, setGatewayKeyOpen] = React.useState(false);
+    const { state: gatewayKeyState, reload: reloadGatewayKey } = useGatewayKey();
     const [selectedTagIds, setSelectedTagIds] = React.useState<string[]>([]);
     const [switchingAssistantId, setSwitchingAssistantId] = React.useState<string | null>(null);
     const [switchError, setSwitchError] = React.useState<string | null>(null);
@@ -696,10 +700,16 @@ export const ConversationSidebar = React.memo(
             <Logo className="size-8 shrink-0 rounded-lg shadow-sm" />
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold tracking-tight text-sm text-foreground">LastLab</span>
-                <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">PLAYGROUND</span>
+                <span className="font-semibold tracking-tight text-sm text-foreground">
+                  LastLab
+                </span>
+                <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+                  PLAYGROUND
+                </span>
               </div>
-              <span className="text-[10px] text-muted-foreground/75 font-mono">@model-aggregator</span>
+              <span className="text-[10px] text-muted-foreground/75 font-mono">
+                @model-aggregator
+              </span>
             </div>
           </div>
         </SidebarHeader>
@@ -709,7 +719,10 @@ export const ConversationSidebar = React.memo(
               <Button
                 variant="outline"
                 size="sm"
-                className={cn(SIDEBAR_ACTION_BUTTON_CLASSNAME, "rounded-t-[var(--radius-list-item)] rounded-b-[4px]")}
+                className={cn(
+                  SIDEBAR_ACTION_BUTTON_CLASSNAME,
+                  "rounded-t-[var(--radius-list-item)] rounded-b-[4px]",
+                )}
                 onClick={onCreateConversation}
               >
                 <Plus className="size-4" />
@@ -718,7 +731,10 @@ export const ConversationSidebar = React.memo(
 
               <ConversationSearchButton
                 onSelect={onSelect}
-                className={cn(SIDEBAR_ACTION_BUTTON_CLASSNAME, "rounded-b-[var(--radius-list-item)] rounded-t-[4px]")}
+                className={cn(
+                  SIDEBAR_ACTION_BUTTON_CLASSNAME,
+                  "rounded-b-[var(--radius-list-item)] rounded-t-[4px]",
+                )}
               />
             </div>
           </SidebarGroup>
@@ -913,6 +929,14 @@ export const ConversationSidebar = React.memo(
             </DialogContent>
           </Dialog>
 
+          <GatewayKeyDialog
+            open={gatewayKeyOpen}
+            onOpenChange={setGatewayKeyOpen}
+            state={gatewayKeyState}
+            onChanged={() => {
+              void reloadGatewayKey();
+            }}
+          />
           <CustomThemeDialog
             open={customThemeOpen}
             onOpenChange={setCustomThemeOpen}
@@ -1009,6 +1033,19 @@ export const ConversationSidebar = React.memo(
                   );
                 })}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    setGatewayKeyOpen(true);
+                  }}
+                >
+                  <Key className="size-4" />
+                  <span className="flex-1">{t("gateway_key_dialog.title")}</span>
+                  <Check
+                    className={
+                      gatewayKeyState?.configured ? "size-4" : "size-4 opacity-0"
+                    }
+                  />
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     setCustomThemeOpen(true);

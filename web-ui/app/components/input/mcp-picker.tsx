@@ -138,7 +138,8 @@ export function McpPickerButton({ disabled = false, className }: McpPickerButton
           disabled={!canUse || updateMcpMutation.isPending}
           className={cn(
             "h-9 rounded-full border border-border/70 bg-muted/70 px-2.5 text-foreground shadow-none hover:bg-accent hover:text-accent-foreground",
-            selectedEnabledCount > 0 && "border-primary/20 bg-primary/10 text-primary hover:bg-primary/18",
+            selectedEnabledCount > 0 &&
+              "border-primary/20 bg-primary/10 text-primary hover:bg-primary/18",
             className,
           )}
         >
@@ -158,9 +159,7 @@ export function McpPickerButton({ disabled = false, className }: McpPickerButton
       <PopoverContent align="end" className="w-[min(92vw,22rem)] gap-0 p-0">
         <PopoverHeader className="px-3 pt-3 pb-2">
           <PopoverTitle className="text-sm">{t("mcp.title")}</PopoverTitle>
-          <PopoverDescription className="text-[11px]">
-            {t("mcp.description")}
-          </PopoverDescription>
+          <PopoverDescription className="text-[11px]">{t("mcp.description")}</PopoverDescription>
         </PopoverHeader>
 
         <div className="space-y-3 px-2.5 py-2.5">

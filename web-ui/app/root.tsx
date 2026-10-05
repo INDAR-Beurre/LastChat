@@ -21,8 +21,8 @@ import { isWebAuthLocked, onWebAuthStateChange } from "./services/api";
 const queryClient = new QueryClient();
 
 export const links: Route.LinksFunction = () => [
-  { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "512x512" },
-  { rel: "apple-touch-icon", href: "/favicon.png" },
+  { rel: "icon", href: "./favicon.png", type: "image/png", sizes: "512x512" },
+  { rel: "apple-touch-icon", href: "./favicon.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -73,7 +73,7 @@ function AppContent() {
     };
 
     const bridge = {
-      version: "1.5.0",
+      version: "2.0.0",
       gateway: "https://relay-gw.pages.dev",
       onBackPressed: handleBackPressed,
       openModelPicker: () => {
@@ -117,8 +117,10 @@ function AppContent() {
       },
     };
 
-    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastLabApp = bridge;
-    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastChatApp = bridge;
+    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastLabApp =
+      bridge;
+    (window as unknown as { LastLabApp?: typeof bridge; LastChatApp?: typeof bridge }).LastChatApp =
+      bridge;
 
     return () => {
       delete (window as unknown as { LastLabApp?: typeof bridge }).LastLabApp;

@@ -11,7 +11,7 @@ Embedded React Router 7 SPA bundled into the Android app. Build output `web-ui/b
 - ky 1.14.3 (HTTP) + manual SSE parser over `ReadableStream` (because `EventSource` can't send `Authorization` headers)
 - i18next + react-i18next — **5 namespaces**: `common`, `input`, `markdown`, `message`, **`page`**
 - `motion` (motion/react, NOT framer-motion)
-- `@tanstack/react-query`, `react-resizable-panels`, `use-stick-to-bottom` (autoscroll — NOT `react-infinite-scroll-component`), `vaul`, `sonner`, `shiki`, `katex`, `rehype-katex`, `rehype-raw`, `remark-gfm`, `remark-math`, `file-type`, `dayjs`, `uuid`, `isbot`
+- `@tanstack/react-query`, `react-resizable-panels`, `use-stick-to-bottom` (autoscroll — NOT `react-infinite-scroll-component`), `vaul`, `sonner`, `shiki`, `katex`, `rehype-katex`, `rehype-raw`, `remark-gfm`, `remark-math`, `file-type`, `dayjs`, `uuid`
 - **Markdown renderer**: `streamdown` ^2.2.0 + `@streamdown/cjk` + custom `remark-rp` plugin (NOT `react-markdown`)
 - `radix-ui` (the new unified package, used in 20 ui/ files — NOT legacy `@radix-ui/react-*`)
 - `@material-symbols/svg-400`, `vite-plugin-svgr`
@@ -53,7 +53,7 @@ Build output: `build/client/` (HTML + JS + CSS). Gradle consumes this — no man
 8. **`verbatimModuleSyntax: true`** — must use `import type { X }` for type-only imports.
 9. **Path alias `~`** → `app/` directory.
 10. **Build for Android uses `npm run build`**, not `bun run build`. Don't introduce bun-only APIs.
-11. **Unused deps in `package.json`**: `immer` and `zod` are declared but have ZERO imports — don't add to them. `react-infinite-scroll-component` IS used legitimately in `app/components/extended/infinite-scroll-area.tsx` for list pagination (NOT chat autoscroll — that uses `use-stick-to-bottom`).
+11. **Removed deps**: `immer`, `zod`, and `@react-router/serve` were dropped as unused — this is an SPA (`ssr: false`), and the server build is discarded at the end of `npm run build`. `@react-router/node` must stay even so: React Router resolves the server runtime from it, and `react-router typegen` fails without it.
 12. **Persona placeholders** (`{{char}}`, `{char}`, `{{user}}`, `{user}`) are substituted ONLY in `TextPart` rendering via `replacePersonaPlaceholders` — not in previews, exports, or quick-jump.
 
 ## Directory structure
@@ -230,7 +230,7 @@ User sends message
 - **Don't assume `ReasoningPart` has `steps[]`** — it doesn't.
 - **Don't use bun-only APIs** — Gradle builds with `npm run build`.
 - **Don't conflate `react-infinite-scroll-component` with chat autoscroll** — the package IS used legitimately in `extended/infinite-scroll-area.tsx` for paginated lists; chat autoscroll uses `use-stick-to-bottom`. Don't remove the dep, but don't use it for chat message scrolling either.
-- **Don't add `immer` or `zod` patterns** — both deps are unused and shouldn't grow.
+- **Don't add `immer` or `zod` patterns** — both were removed as unused; adding them back reintroduces dead weight.
 
 ## Troubleshooting
 

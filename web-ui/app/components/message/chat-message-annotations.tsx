@@ -5,7 +5,9 @@ import { ExternalLink } from "~/lib/material-icons";
 import { cn } from "~/lib/utils";
 import type { UIMessageAnnotation } from "~/types";
 
-function getCitationLabel(annotation: Extract<UIMessageAnnotation, { type: "url_citation" }>): string {
+function getCitationLabel(
+  annotation: Extract<UIMessageAnnotation, { type: "url_citation" }>,
+): string {
   if (annotation.title.trim().length > 0) {
     return annotation.title;
   }

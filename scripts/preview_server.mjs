@@ -210,9 +210,7 @@ async function handleRequest(req, res) {
   if (pathname === "/api/health" || pathname === "/api/network") {
     const net = getNetworkAddresses();
     const port = server.address().port;
-    const apkFile = fs.existsSync(path.join(DIST_DIR, "lastlab.apk"))
-      ? "lastlab.apk"
-      : (fs.existsSync(path.join(DIST_DIR, "lastchat-playground.apk")) ? "lastchat-playground.apk" : "lastlab.apk");
+    const apkFile = "lastlab.apk";
     const apkStat = fs.existsSync(path.join(DIST_DIR, apkFile))
       ? fs.statSync(path.join(DIST_DIR, apkFile))
       : null;

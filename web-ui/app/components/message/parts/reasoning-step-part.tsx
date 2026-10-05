@@ -69,7 +69,12 @@ export function ReasoningStepPart({
         ? ReasoningCardState.Collapsed
         : ReasoningCardState.Expanded;
     });
-  }, [loading, reasoning.reasoning, globalDisplaySetting?.showThinkingContent, globalDisplaySetting?.autoCloseThinking]);
+  }, [
+    loading,
+    reasoning.reasoning,
+    globalDisplaySetting?.showThinkingContent,
+    globalDisplaySetting?.autoCloseThinking,
+  ]);
 
   React.useEffect(() => {
     if (loading && expandState === ReasoningCardState.Preview && contentRef.current) {
@@ -86,8 +91,8 @@ export function ReasoningStepPart({
     setExpandState(nextExpanded ? ReasoningCardState.Expanded : ReasoningCardState.Collapsed);
   };
 
-  const [duration, setDuration] = React.useState<number | null>(
-    () => formatDuration(reasoning.createdAt, reasoning.finishedAt),
+  const [duration, setDuration] = React.useState<number | null>(() =>
+    formatDuration(reasoning.createdAt, reasoning.finishedAt),
   );
 
   React.useEffect(() => {
@@ -123,9 +128,9 @@ export function ReasoningStepPart({
           </span>
         }
         extra={
-          loading && duration !== null
-            ? <span className="text-muted-foreground text-xs">{duration.toFixed(1)}s</span>
-            : undefined
+          loading && duration !== null ? (
+            <span className="text-muted-foreground text-xs">{duration.toFixed(1)}s</span>
+          ) : undefined
         }
         contentVisible={expandState !== ReasoningCardState.Collapsed}
       >

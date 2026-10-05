@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const PROJECT_DIR = "/home/alex/Projects/LastChat";
+const PROJECT_DIR = path.resolve(import.meta.dirname, "..");
 const DIST_DIR = path.join(PROJECT_DIR, "dist");
 const SERVER_PORT = 8765;
 const CDP_PORT = 9338;

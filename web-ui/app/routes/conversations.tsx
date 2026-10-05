@@ -723,19 +723,23 @@ function ConversationsPageInner() {
     }));
   }, [activeId, settings, effectiveCurrentAssistantId, actualSelectedNodeMessages]);
 
+  // Only values the relay actually reported are shown; everything else stays absent so the
+  // inspector renders a dash rather than an invented number.
   const buildCurrentInspectorData = React.useCallback((): InspectorData => {
-    const currentModelId = settings?.chatModelId || "deepseek-v4-1-flash";
     const lastMsg = selectedNodeMessages[selectedNodeMessages.length - 1]?.message;
+    const usage = lastMsg?.usage;
     return {
-      modelId: currentModelId,
+      modelId: settings?.chatModelId || "",
       endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
       providerSlug: "@model-aggregator",
-      promptTokens: lastMsg?.usage?.promptTokens ?? 42,
-      completionTokens: lastMsg?.usage?.completionTokens ?? 286,
-      totalTokens: lastMsg?.usage?.totalTokens ?? 328,
-      latencyMs: 142,
+      maskedKey: settings?.gatewayKeyMasked || undefined,
+      ...(usage?.promptTokens === undefined ? {} : { promptTokens: usage.promptTokens }),
+      ...(usage?.completionTokens === undefined
+        ? {}
+        : { completionTokens: usage.completionTokens }),
+      ...(usage?.totalTokens === undefined ? {} : { totalTokens: usage.totalTokens }),
     };
-  }, [selectedNodeMessages, settings?.chatModelId]);
+  }, [selectedNodeMessages, settings?.chatModelId, settings?.gatewayKeyMasked]);
 
   const {
     draftKey,
@@ -1075,7 +1079,7 @@ function ConversationsPageInner() {
 
   const chatContent = (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background pt-12">
-      {(!isNewChat || selectedNodeMessages.length > 0) ? (
+      {!isNewChat || selectedNodeMessages.length > 0 ? (
         <div className="relative flex min-h-0 flex-1">
           <ConversationTimeline
             activeId={activeId}
@@ -1175,7 +1179,9 @@ function ConversationsPageInner() {
                 <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
               </span>
               <span className="font-semibold tracking-wide">LastLab</span>
-              <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono">@model-aggregator</span>
+              <span className="hidden sm:inline text-[10px] text-muted-foreground font-mono">
+                @model-aggregator
+              </span>
             </div>
           </div>
 

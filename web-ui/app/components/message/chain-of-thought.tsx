@@ -1,8 +1,5 @@
 import * as React from "react";
-import {
-  AnimatePresence,
-  motion,
-} from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, ChevronRight, ChevronUp } from "~/lib/material-icons";
 
 import { Card } from "~/components/ui/card";
@@ -239,7 +236,11 @@ function ChainOfThoughtStepContent({
                       y: getChatLayoutTransition(false),
                     },
               }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: -4, transition: { duration: 0.12 } }}
+              exit={
+                reducedMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, height: 0, y: -4, transition: { duration: 0.12 } }
+              }
               className="overflow-hidden"
             >
               <div className="px-1 pb-2 pt-1">{children}</div>

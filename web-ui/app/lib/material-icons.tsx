@@ -35,6 +35,9 @@ import FavoriteSvg from "@material-symbols/svg-400/rounded/favorite.svg?react";
 import FlashOnSvg from "@material-symbols/svg-400/rounded/flash_on.svg?react";
 import FolderOpenSvg from "@material-symbols/svg-400/rounded/folder_open.svg?react";
 import InfoSvg from "@material-symbols/svg-400/rounded/info.svg?react";
+import KeySvg from "@material-symbols/svg-400/rounded/key.svg?react";
+import LockSvg from "@material-symbols/svg-400/rounded/lock.svg?react";
+import VisibilitySvg from "@material-symbols/svg-400/rounded/visibility.svg?react";
 import ImageSvg from "@material-symbols/svg-400/rounded/image.svg?react";
 import KeepOffSvg from "@material-symbols/svg-400/rounded/keep_off.svg?react";
 import KeepSvg from "@material-symbols/svg-400/rounded/keep.svg?react";
@@ -78,14 +81,7 @@ export type LucideProps = Omit<React.SVGProps<SVGSVGElement>, "ref"> & {
 
 function renderIcon(
   Component: SvgIconComponent,
-  {
-    size,
-    absoluteStrokeWidth: _absoluteStrokeWidth,
-    height,
-    width,
-    fill,
-    ...props
-  }: LucideProps,
+  { size, absoluteStrokeWidth: _absoluteStrokeWidth, height, width, fill, ...props }: LucideProps,
 ) {
   return (
     <Component
@@ -104,10 +100,10 @@ function createIcon(Component: SvgIconComponent) {
 
 function createFilledIcon(OutlineComponent: SvgIconComponent, FilledComponent: SvgIconComponent) {
   const Icon = ({ className, ...props }: LucideProps) =>
-    renderIcon(
-      /\bfill-current\b/.test(className ?? "") ? FilledComponent : OutlineComponent,
-      { className, ...props },
-    );
+    renderIcon(/\bfill-current\b/.test(className ?? "") ? FilledComponent : OutlineComponent, {
+      className,
+      ...props,
+    });
   return Icon;
 }
 
@@ -174,6 +170,9 @@ export const Heart = createFilledIcon(FavoriteSvg, FavoriteFillSvg);
 export const Image = createIcon(ImageSvg);
 export const ImageOff = createIcon(BrokenImageSvg);
 export const InfoIcon = createIcon(InfoSvg);
+export const Key = createIcon(KeySvg);
+export const Lock = createIcon(LockSvg);
+export const Visibility = createIcon(VisibilitySvg);
 export const KeyboardArrowDown = ChevronDown;
 export const KeyboardArrowUp = ChevronUp;
 export const Languages = createIcon(TranslateSvg);
@@ -229,5 +228,3 @@ export const XIcon = X;
 export const Zap = createIcon(BoltSvg);
 
 export const ForkLeft = createIcon(ForkLeftSvg);
-
-

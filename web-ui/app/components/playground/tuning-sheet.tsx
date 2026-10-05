@@ -398,7 +398,12 @@ export function PlaygroundTuningSheet({
                         )}
                       >
                         <span className="text-[11px] font-mono font-bold">{label}</span>
-                        <span className={cn("text-[8px]", isSelected ? "text-primary-foreground/70" : "text-muted-foreground/60")}>
+                        <span
+                          className={cn(
+                            "text-[8px]",
+                            isSelected ? "text-primary-foreground/70" : "text-muted-foreground/60",
+                          )}
+                        >
                           {sublabel}
                         </span>
                       </button>

@@ -19,6 +19,8 @@ export interface InspectorData {
   curl?: string;
   requestJson?: string;
   responseJson?: string;
+  /** The user's key as the backend masks it, e.g. `sk-…xyz`; never the key itself. */
+  maskedKey?: string;
   latencyMs?: number;
   tokensPerSec?: number;
   promptTokens?: number;
@@ -32,29 +34,27 @@ interface RawInspectorDialogProps {
   data?: InspectorData | null;
 }
 
-export function RawInspectorDialog({
-  open,
-  onOpenChange,
-  data,
-}: RawInspectorDialogProps) {
+export function RawInspectorDialog({ open, onOpenChange, data }: RawInspectorDialogProps) {
   const [activeTab, setActiveTab] = React.useState<"curl" | "payload" | "telemetry">("curl");
   const [copied, setCopied] = React.useState<string | null>(null);
 
-  const modelId = data?.modelId || "deepseek-v4-1-flash";
+  const modelId = data?.modelId || "";
   const endpoint = data?.endpoint || "https://relay-gw.pages.dev/v1/chat/completions";
   const provider = data?.providerSlug || "@model-aggregator";
-  const latency = data?.latencyMs ?? 142;
-  const promptTokens = data?.promptTokens ?? 42;
-  const completionTokens = data?.completionTokens ?? 286;
-  const totalTokens = data?.totalTokens ?? promptTokens + completionTokens;
-  const tokensPerSec = data?.tokensPerSec ?? 84.5;
+  // Metrics are shown only when actually measured; "—" means the relay has not reported them.
+  const NO_VALUE = "\u2014";
+  const latency = data?.latencyMs ?? null;
+  const promptTokens = data?.promptTokens ?? null;
+  const completionTokens = data?.completionTokens ?? null;
+  const totalTokens = data?.totalTokens ?? null;
+  const tokensPerSec = data?.tokensPerSec ?? null;
 
   const defaultCurl = React.useMemo(() => {
     return (
       data?.curl ||
       `curl -X POST ${endpoint} \\\n` +
         `  -H "Content-Type: application/json" \\\n` +
-        `  -H "Authorization: Bearer sk-relay-admin" \\\n` +
+        `  -H "Authorization: Bearer $LASTLAB_GATEWAY_KEY" \\\n` +
         `  -d '{\n` +
         `    "model": "${modelId}",\n` +
         `    "messages": [\n` +
@@ -72,7 +72,7 @@ export function RawInspectorDialog({
       data?.requestJson ||
       JSON.stringify(
         {
-          model: modelId,
+          model: modelId || "<model>",
           messages: [
             { role: "system", content: "You are LastLab, an elite AI engineering partner." },
             { role: "user", content: "Can you show me a concise Kotlin coroutine example?" },
@@ -93,24 +93,35 @@ export function RawInspectorDialog({
       data?.responseJson ||
       JSON.stringify(
         {
-          id: "chatcmpl-lastlab-8f92a",
           object: "chat.completion",
-          model: modelId,
-          provider: provider,
-          routing: "edge-cf-pages",
-          latency_ms: latency,
-          tokens_per_sec: tokensPerSec,
-          usage: {
-            prompt_tokens: promptTokens,
-            completion_tokens: completionTokens,
-            total_tokens: totalTokens,
-          },
+          model: modelId || "<model>",
+          provider,
+          ...(latency === null ? {} : { latency_ms: latency }),
+          ...(tokensPerSec === null ? {} : { tokens_per_sec: tokensPerSec }),
+          ...(promptTokens === null && completionTokens === null
+            ? {}
+            : {
+                usage: {
+                  ...(promptTokens === null ? {} : { prompt_tokens: promptTokens }),
+                  ...(completionTokens === null ? {} : { completion_tokens: completionTokens }),
+                  ...(totalTokens === null ? {} : { total_tokens: totalTokens }),
+                },
+              }),
         },
         null,
         2,
       )
     );
-  }, [completionTokens, latency, modelId, promptTokens, provider, data?.responseJson, tokensPerSec, totalTokens]);
+  }, [
+    completionTokens,
+    latency,
+    modelId,
+    promptTokens,
+    provider,
+    data?.responseJson,
+    tokensPerSec,
+    totalTokens,
+  ]);
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -146,10 +157,16 @@ export function RawInspectorDialog({
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/40 text-emerald-400 bg-emerald-500/10">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-mono border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+              >
                 200 OK
               </Badge>
-              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-mono border-primary/30 text-primary"
+              >
                 {modelId}
               </Badge>
             </div>
@@ -207,7 +224,11 @@ export function RawInspectorDialog({
                   onClick={() => handleCopy(defaultCurl, "cURL")}
                   className="h-7 gap-1 text-[11px]"
                 >
-                  {copied === "cURL" ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                  {copied === "cURL" ? (
+                    <Check className="size-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
                   <span>{copied === "cURL" ? "Copied" : "Copy cURL"}</span>
                 </Button>
               </div>
@@ -265,37 +286,76 @@ export function RawInspectorDialog({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <div className="rounded-xl border border-emerald-500/20 bg-card/40 p-3 text-center glass-border">
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">Latency</div>
-                  <div className="text-xl font-mono font-bold text-emerald-400 mt-1.5 tabular-nums animate-badge-in">{latency} ms</div>
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">
+                    Latency
+                  </div>
+                  <div className="text-xl font-mono font-bold text-emerald-400 mt-1.5 tabular-nums animate-badge-in">
+                    {latency === null ? NO_VALUE : `${latency} ms`}
+                  </div>
                   <div className="text-[9px] text-muted-foreground/60 mt-0.5">End-to-end</div>
                 </div>
                 <div className="rounded-xl border border-cyan-500/20 bg-card/40 p-3 text-center glass-border">
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">Speed</div>
-                  <div className="text-xl font-mono font-bold text-cyan-400 mt-1.5 tabular-nums animate-badge-in">{tokensPerSec} t/s</div>
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">
+                    Speed
+                  </div>
+                  <div className="text-xl font-mono font-bold text-cyan-400 mt-1.5 tabular-nums animate-badge-in">
+                    {tokensPerSec === null ? NO_VALUE : `${tokensPerSec} t/s`}
+                  </div>
                   <div className="text-[9px] text-muted-foreground/60 mt-0.5">Generation</div>
                 </div>
                 <div className="rounded-xl border border-purple-500/20 bg-card/40 p-3 text-center glass-border">
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">Tokens</div>
-                  <div className="text-xl font-mono font-bold text-purple-400 mt-1.5 tabular-nums animate-badge-in">{totalTokens}</div>
-                  <div className="text-[9px] text-muted-foreground/60 mt-0.5">In: {promptTokens} | Out: {completionTokens}</div>
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">
+                    Tokens
+                  </div>
+                  <div className="text-xl font-mono font-bold text-purple-400 mt-1.5 tabular-nums animate-badge-in">
+                    {totalTokens === null ? NO_VALUE : totalTokens}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground/60 mt-0.5">
+                    In: {promptTokens === null ? NO_VALUE : promptTokens} | Out:{" "}
+                    {completionTokens === null ? NO_VALUE : completionTokens}
+                  </div>
                 </div>
                 <div className="rounded-xl border border-emerald-500/15 bg-card/40 p-3 text-center glass-border">
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">Gateway</div>
-                  <div className="text-sm font-semibold text-foreground mt-1.5 truncate">Cloudflare Edge</div>
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/80">
+                    Gateway
+                  </div>
+                  <div className="text-sm font-semibold text-foreground mt-1.5 truncate">
+                    Cloudflare Edge
+                  </div>
                   <div className="text-[9px] text-emerald-400 mt-0.5 flex items-center justify-center gap-1">
                     <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />
-                    100% Up
+                    <a
+                      href="https://relay-gw.pages.dev/v1/models"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-2"
+                    >
+                      Check gateway
+                    </a>
                   </div>
                 </div>
               </div>
 
               <div className="rounded-xl border border-border/60 bg-card/40 p-3 space-y-2">
-                <div className="text-xs font-semibold text-foreground">Relay Gateway Routing Context</div>
+                <div className="text-xs font-semibold text-foreground">
+                  Relay Gateway Routing Context
+                </div>
                 <div className="grid grid-cols-1 gap-1 text-[11px] font-mono text-muted-foreground sm:grid-cols-2">
-                  <div>Provider: <span className="text-foreground">{provider}</span></div>
-                  <div>Upstream Model: <span className="text-foreground">{modelId}</span></div>
-                  <div>Edge CDN: <span className="text-foreground">relay-gw.pages.dev</span></div>
-                  <div>Auth: <span className="text-foreground">Bearer sk-relay-admin</span></div>
+                  <div>
+                    Provider: <span className="text-foreground">{provider}</span>
+                  </div>
+                  <div>
+                    Upstream Model: <span className="text-foreground">{modelId}</span>
+                  </div>
+                  <div>
+                    Edge CDN: <span className="text-foreground">relay-gw.pages.dev</span>
+                  </div>
+                  <div>
+                    Auth:{" "}
+                    <span className="text-foreground">
+                      Bearer {data?.maskedKey || "your key set in Settings"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -27,7 +27,11 @@ export function ReasoningPart({
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-muted-foreground transition hover:text-foreground"
         onClick={() => setExpanded(!expanded)}
       >
-        {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5" />
+        )}
         <Think className={cn("h-3.5 w-3.5 text-purple-400", !isFinished && "animate-pulse")} />
         <span>{isFinished ? "Thinking Process" : "Thinking..."}</span>
         {!isFinished && (

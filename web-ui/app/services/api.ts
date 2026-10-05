@@ -92,7 +92,9 @@ function getValidWebAuthToken(): string | null {
 
 function dispatchWebAuthRequired(detail: WebAuthRequiredEventDetail) {
   if (!isBrowser()) return;
-  window.dispatchEvent(new CustomEvent<WebAuthRequiredEventDetail>(WEB_AUTH_REQUIRED_EVENT, { detail }));
+  window.dispatchEvent(
+    new CustomEvent<WebAuthRequiredEventDetail>(WEB_AUTH_REQUIRED_EVENT, { detail }),
+  );
 }
 
 function dispatchWebAuthStateChange() {
@@ -157,7 +159,7 @@ export function clearWebAuthToken(): void {
 export function onWebAuthRequired(
   listener: (detail: WebAuthRequiredEventDetail) => void,
 ): () => void {
-  if (!isBrowser()) return () => { };
+  if (!isBrowser()) return () => {};
 
   const handler = (event: Event) => {
     const customEvent = event as CustomEvent<WebAuthRequiredEventDetail>;
@@ -185,7 +187,7 @@ export function isWebAuthLocked(): boolean {
 export function onWebAuthStateChange(
   listener: (detail: WebAuthStateChangeDetail) => void,
 ): () => void {
-  if (!isBrowser()) return () => { };
+  if (!isBrowser()) return () => {};
 
   const handler = (event: Event) => {
     const customEvent = event as CustomEvent<WebAuthStateChangeDetail>;

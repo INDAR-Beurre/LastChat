@@ -34,7 +34,9 @@ export function useChatReducedMotion() {
 }
 
 export function getChatFadeTransition(reducedMotion: boolean): Transition {
-  return reducedMotion ? { duration: 0.01 } : { duration: CHAT_MOTION_DURATION.standard, ease: "easeOut" };
+  return reducedMotion
+    ? { duration: 0.01 }
+    : { duration: CHAT_MOTION_DURATION.standard, ease: "easeOut" };
 }
 
 export function getChatLayoutTransition(reducedMotion: boolean): Transition {

@@ -24,15 +24,23 @@ done
 echo "=== LastLab Mobile APK Build [Mode: $MODE] ==="
 echo "Project Root: $PROJECT_DIR"
 
-# 1. Locate JDK (Java 17+)
-if [ -d "/home/alex/.local/jdk-17" ]; then
-    JAVA_HOME="/home/alex/.local/jdk-17"
+# 1. Locate JDK (Java 17+). Honor an explicit JAVA_HOME first, then the
+# per-user toolchain, then whatever javac is on PATH.
+if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/javac" ]; then
+    :
+elif [ -d "$HOME/.local/jdk-17" ]; then
+    JAVA_HOME="$HOME/.local/jdk-17"
 elif [ -d "/tmp/android-toolchain/jdk" ]; then
     JAVA_HOME="/tmp/android-toolchain/jdk"
 elif command -v javac >/dev/null 2>&1; then
     JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(which javac)")")")"
 else
-    echo "ERROR: Java 17+ not found. Please ensure JDK 17 is installed."
+    echo "ERROR: Java 17+ not found. Set JAVA_HOME or install a JDK 17." >&2
+    exit 1
+fi
+
+if [ ! -x "$JAVA_HOME/bin/java" ]; then
+    echo "ERROR: JAVA_HOME=$JAVA_HOME has no bin/java." >&2
     exit 1
 fi
 
@@ -48,8 +56,12 @@ mkdir -p "$DIST_DIR"
 
 if [ "$MODE" = "full" ]; then
     # Full Gradle CLI build
-    if [ -d "/home/alex/android-sdk" ]; then
-        export ANDROID_HOME="/home/alex/android-sdk"
+    if [ -n "${ANDROID_HOME:-}" ] && [ -d "$ANDROID_HOME" ]; then
+        :
+    elif [ -d "$HOME/android-sdk" ]; then
+        export ANDROID_HOME="$HOME/android-sdk"
+    elif [ -d "$HOME/Android/Sdk" ]; then
+        export ANDROID_HOME="$HOME/Android/Sdk"
     fi
     echo "[1/2] Building authentic full-engine LastLab APK with Gradle..."
     cd "$PROJECT_DIR"
@@ -59,7 +71,8 @@ if [ "$MODE" = "full" ]; then
         --no-daemon
     
     echo "[2/2] Generating checksums for generated APKs..."
-    find "$PROJECT_DIR/app/build/outputs/apk/stable/release" -name "*.apk" -exec sha256sum {} + > "$DIST_DIR/full-release-apks.sha256"
+    (cd "$PROJECT_DIR/app/build/outputs/apk/stable/release" \
+        && sha256sum ./*.apk > "$DIST_DIR/full-release-apks.sha256")
     echo "Full release APKs built in app/build/outputs/apk/stable/release/:"
     ls -lh "$PROJECT_DIR/app/build/outputs/apk/stable/release/"*.apk
     exit 0
@@ -125,10 +138,7 @@ echo "[6/6] Aligning & signing APK..."
 SIGNED_APK=$(find "$DIST_DIR" -name "base-aligned-*.apk" | head -n 1)
 FINAL_APK="$DIST_DIR/lastlab.apk"
 mv -f "$SIGNED_APK" "$FINAL_APK"
-cp -f "$FINAL_APK" "$DIST_DIR/lastchat-playground.apk"
-
 (cd "$DIST_DIR" && sha256sum "$(basename "$FINAL_APK")" > "lastlab.apk.sha256")
-(cd "$DIST_DIR" && sha256sum "lastchat-playground.apk" > "lastchat-playground.apk.sha256")
 
 echo "================================================="
 echo "✓ BUILD SUCCESSFUL!"

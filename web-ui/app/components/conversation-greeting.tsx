@@ -69,7 +69,8 @@ export function ConversationGreeting({ className }: { className?: string }) {
         })}
       </span>
       <p className="text-xs text-muted-foreground/80 max-w-md text-center leading-relaxed">
-        Mobile AI playground powered exclusively by the Relay Gateway (<span className="text-primary font-mono font-medium">@model-aggregator</span>).
+        Mobile AI playground powered exclusively by the Relay Gateway (
+        <span className="text-primary font-mono font-medium">@model-aggregator</span>).
       </p>
     </div>
   );

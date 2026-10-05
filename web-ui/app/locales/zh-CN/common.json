@@ -108,5 +108,25 @@
     "unlock": "解锁",
     "unlocking": "正在解锁...",
     "unlock_failed": "Web API 解锁失败。"
+  },
+  "gateway_key_dialog": {
+    "title": "中继网关密钥",
+    "description": "LastLab 使用你自己的密钥连接中继网关（模型聚合器）。密钥仅保存在本机，不会发送到其他任何地方。",
+    "status": "状态",
+    "configured": "已配置",
+    "not_configured": "未配置",
+    "new_key": "网关密钥",
+    "storage_hint": "密钥保存在应用私有存储中。若此设备多人共用，建议清除密钥。",
+    "show": "显示密钥",
+    "hide": "隐藏密钥",
+    "save": "保存",
+    "saving": "保存中…",
+    "saved": "网关密钥已保存",
+    "saved_masked": "网关密钥已保存（{{masked}}）",
+    "save_failed": "无法保存网关密钥",
+    "clear": "清除",
+    "cleared": "网关密钥已清除",
+    "clear_failed": "无法清除网关密钥",
+    "cancel": "取消"
   }
 }

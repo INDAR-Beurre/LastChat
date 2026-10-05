@@ -71,24 +71,33 @@ function preProcess(content: string): string {
   }
 
   const isProtected = (start: number, end: number): boolean => {
-    return protectedRanges.some((range) => (start >= range.start && start < range.end) || (end > range.start && end <= range.end));
+    return protectedRanges.some(
+      (range) =>
+        (start >= range.start && start < range.end) || (end > range.start && end <= range.end),
+    );
   };
 
   // Replace ==highlight== to <mark>highlight</mark>, skip code & math
-  result = result.replace(/(?<![=\\])==(?![=\s])([^=\n]+?)(?<![\s=\\])==(?!=)/g, (match, group1, offset) => {
-    if (isProtected(offset, offset + match.length)) {
-      return match;
-    }
-    return `<mark>${group1}</mark>`;
-  });
+  result = result.replace(
+    /(?<![=\\])==(?![=\s])([^=\n]+?)(?<![\s=\\])==(?!=)/g,
+    (match, group1, offset) => {
+      if (isProtected(offset, offset + match.length)) {
+        return match;
+      }
+      return `<mark>${group1}</mark>`;
+    },
+  );
 
   // Replace ++underline++ to <u>underline</u>, skip code & math
-  result = result.replace(/(?<![+\\])\+\+(?![+\s])([^+\n]+?)(?<![\s+\\])\+\+(?!\+)/g, (match, group1, offset) => {
-    if (isProtected(offset, offset + match.length)) {
-      return match;
-    }
-    return `<u>${group1}</u>`;
-  });
+  result = result.replace(
+    /(?<![+\\])\+\+(?![+\s])([^+\n]+?)(?<![\s+\\])\+\+(?!\+)/g,
+    (match, group1, offset) => {
+      if (isProtected(offset, offset + match.length)) {
+        return match;
+      }
+      return `<u>${group1}</u>`;
+    },
+  );
 
   return result;
 }
@@ -178,12 +187,10 @@ export default function Markdown({
 
   const getRuleColor = React.useCallback(
     (pattern: string) => {
-      const rule = displaySetting?.rpStyleRules?.find(
-        (r) => r.pattern === pattern && r.enabled
-      );
+      const rule = displaySetting?.rpStyleRules?.find((r) => r.pattern === pattern && r.enabled);
       return rule ? rule.colorHex : undefined;
     },
-    [displaySetting?.rpStyleRules]
+    [displaySetting?.rpStyleRules],
   );
 
   function MarkdownCode(componentProps: Record<string, unknown> & { children?: React.ReactNode }) {
@@ -237,51 +244,109 @@ export default function Markdown({
             pre: ({ children }) => <>{children}</>,
             h1: ({ children, style, ...props }: any) => {
               const color = getRuleColor("#");
-              return <h1 style={color ? { ...style, color } : style} {...props}>{children}</h1>;
+              return (
+                <h1 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h1>
+              );
             },
             h2: ({ children, style, ...props }: any) => {
               const color = getRuleColor("##");
-              return <h2 style={color ? { ...style, color } : style} {...props}>{children}</h2>;
+              return (
+                <h2 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h2>
+              );
             },
             h3: ({ children, style, ...props }: any) => {
               const color = getRuleColor("###");
-              return <h3 style={color ? { ...style, color } : style} {...props}>{children}</h3>;
+              return (
+                <h3 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h3>
+              );
             },
             h4: ({ children, style, ...props }: any) => {
               const color = getRuleColor("####");
-              return <h4 style={color ? { ...style, color } : style} {...props}>{children}</h4>;
+              return (
+                <h4 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h4>
+              );
             },
             h5: ({ children, style, ...props }: any) => {
               const color = getRuleColor("#####");
-              return <h5 style={color ? { ...style, color } : style} {...props}>{children}</h5>;
+              return (
+                <h5 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h5>
+              );
             },
             h6: ({ children, style, ...props }: any) => {
               const color = getRuleColor("######");
-              return <h6 style={color ? { ...style, color } : style} {...props}>{children}</h6>;
+              return (
+                <h6 style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </h6>
+              );
             },
             blockquote: ({ children, style, ...props }: any) => {
               const color = getRuleColor(">");
-              return <blockquote style={color ? { ...style, color, fontStyle: "italic" } : { ...style, fontStyle: "italic" }} {...props}>{children}</blockquote>;
+              return (
+                <blockquote
+                  style={
+                    color
+                      ? { ...style, color, fontStyle: "italic" }
+                      : { ...style, fontStyle: "italic" }
+                  }
+                  {...props}
+                >
+                  {children}
+                </blockquote>
+              );
             },
             em: ({ children, style, ...props }: any) => {
               const color = getRuleColor("*");
-              return <em style={color ? { ...style, color } : style} {...props}>{children}</em>;
+              return (
+                <em style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </em>
+              );
             },
             strong: ({ children, style, ...props }: any) => {
               const color = getRuleColor("**");
-              return <strong style={color ? { ...style, color } : style} {...props}>{children}</strong>;
+              return (
+                <strong style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </strong>
+              );
             },
             del: ({ children, style, ...props }: any) => {
               const color = getRuleColor("~~");
-              return <del style={color ? { ...style, color } : style} {...props}>{children}</del>;
+              return (
+                <del style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </del>
+              );
             },
             mark: ({ children, style, ...props }: any) => {
               const color = getRuleColor("==") || getRuleColor("<mark>");
-              return <mark style={color ? { ...style, color, backgroundColor: `${color}33` } : style} {...props}>{children}</mark>;
+              return (
+                <mark
+                  style={color ? { ...style, color, backgroundColor: `${color}33` } : style}
+                  {...props}
+                >
+                  {children}
+                </mark>
+              );
             },
             u: ({ children, style, ...props }: any) => {
               const color = getRuleColor("++") || getRuleColor("<u>");
-              return <u style={color ? { ...style, color } : style} {...props}>{children}</u>;
+              return (
+                <u style={color ? { ...style, color } : style} {...props}>
+                  {children}
+                </u>
+              );
             },
             code: MarkdownCode as never,
             a: ({ href, children, ...props }) => {

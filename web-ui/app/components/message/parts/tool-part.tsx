@@ -27,7 +27,12 @@ interface ToolPartProps {
   tool: UIToolPart;
   displaySetting?: DisplaySetting | null;
   loading?: boolean;
-  onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
+  onToolApproval?: (
+    toolCallId: string,
+    approved: boolean,
+    reason: string,
+    answer?: string,
+  ) => void | Promise<void>;
   isFirst?: boolean;
   isLast?: boolean;
 }
@@ -72,7 +77,11 @@ export function ToolPart({
         {previewContent}
       </ControlledChainOfThoughtStep>
 
-      <Drawer direction={isMobile ? "bottom" : "right"} open={drawerOpen} onOpenChange={setDrawerOpen}>
+      <Drawer
+        direction={isMobile ? "bottom" : "right"}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      >
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>

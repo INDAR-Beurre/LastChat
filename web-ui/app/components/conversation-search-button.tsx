@@ -5,12 +5,7 @@ import { Search } from "~/lib/material-icons";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "~/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "~/components/ui/dialog";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { cn } from "~/lib/utils";
 import api from "~/services/api";
@@ -65,10 +60,7 @@ function formatRelativeTime(updateAt: number, t: (key: string) => string): strin
   }).format(native);
 }
 
-export function ConversationSearchButton({
-  onSelect,
-  className,
-}: ConversationSearchButtonProps) {
+export function ConversationSearchButton({ onSelect, className }: ConversationSearchButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");

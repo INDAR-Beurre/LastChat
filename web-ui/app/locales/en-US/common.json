@@ -108,5 +108,25 @@
     "unlock": "Unlock",
     "unlocking": "Unlocking...",
     "unlock_failed": "Failed to unlock Web API access."
+  },
+  "gateway_key_dialog": {
+    "title": "Relay Gateway Key",
+    "description": "LastLab talks to the Relay Gateway (model aggregator) with your own key. It is stored on this device and never sent anywhere else.",
+    "status": "Status",
+    "configured": "Configured",
+    "not_configured": "Not configured",
+    "new_key": "Gateway key",
+    "storage_hint": "The key is saved in the app's private storage. Clear it if this device is shared.",
+    "show": "Show key",
+    "hide": "Hide key",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Gateway key saved",
+    "saved_masked": "Gateway key saved ({{masked}})",
+    "save_failed": "Could not save the gateway key",
+    "clear": "Clear",
+    "cleared": "Gateway key cleared",
+    "clear_failed": "Could not clear the gateway key",
+    "cancel": "Cancel"
   }
 }

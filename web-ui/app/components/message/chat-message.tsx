@@ -2,7 +2,8 @@ import * as React from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 
-import { ArrowDown,
+import {
+  ArrowDown,
   ArrowUp,
   ChevronLeft,
   ChevronRight,
@@ -15,7 +16,8 @@ import { ArrowDown,
   RefreshCw,
   Terminal,
   Trash2,
-  Zap, } from "~/lib/material-icons";
+  Zap,
+} from "~/lib/material-icons";
 
 import type {
   AssistantProfile,
@@ -55,7 +57,12 @@ interface ChatMessageProps {
   onSelectBranch?: (nodeId: string, selectIndex: number) => void | Promise<void>;
   onDelete?: (messageId: string) => void | Promise<void>;
   onFork?: (messageId: string) => void | Promise<void>;
-  onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
+  onToolApproval?: (
+    toolCallId: string,
+    approved: boolean,
+    reason: string,
+    answer?: string,
+  ) => void | Promise<void>;
 }
 
 function hasRenderablePart(part: UIMessagePart): boolean {
@@ -199,7 +206,9 @@ function buildCitationUrlMap(parts: UIMessagePart[]): Map<string, string> {
   parts.forEach((part) => {
     if (part.type !== "tool" || part.toolName !== "search_web") return;
     const outputText = part.output
-      .filter((outputPart): outputPart is { type: "text"; text: string } => outputPart.type === "text")
+      .filter(
+        (outputPart): outputPart is { type: "text"; text: string } => outputPart.type === "text",
+      )
       .map((outputPart) => outputPart.text)
       .join("\n");
     const parsed = parseToolOutputJson(outputText);
@@ -221,455 +230,456 @@ function buildCitationUrlMap(parts: UIMessagePart[]): Map<string, string> {
   return map;
 }
 
-export const ChatMessageActionsRow = React.memo(({
-  node,
-  message,
-  loading,
-  alignRight,
-  onEdit,
-  onRegenerate,
-  onSelectBranch,
-  onDelete,
-  onFork,
-}: {
-  node: MessageNodeDto;
-  message: MessageDto;
-  loading: boolean;
-  alignRight: boolean;
-  onEdit?: (message: MessageDto) => void | Promise<void>;
-  onRegenerate?: (messageId: string) => void | Promise<void>;
-  onSelectBranch?: (nodeId: string, selectIndex: number) => void | Promise<void>;
-  onDelete?: (messageId: string) => void | Promise<void>;
-  onFork?: (messageId: string) => void | Promise<void>;
-}) => {
-  const { t } = useTranslation("message");
-  const [regenerating, setRegenerating] = React.useState(false);
-  const [switchingBranch, setSwitchingBranch] = React.useState(false);
-  const [deleting, setDeleting] = React.useState(false);
-  const [forking, setForking] = React.useState(false);
+export const ChatMessageActionsRow = React.memo(
+  ({
+    node,
+    message,
+    loading,
+    alignRight,
+    onEdit,
+    onRegenerate,
+    onSelectBranch,
+    onDelete,
+    onFork,
+  }: {
+    node: MessageNodeDto;
+    message: MessageDto;
+    loading: boolean;
+    alignRight: boolean;
+    onEdit?: (message: MessageDto) => void | Promise<void>;
+    onRegenerate?: (messageId: string) => void | Promise<void>;
+    onSelectBranch?: (nodeId: string, selectIndex: number) => void | Promise<void>;
+    onDelete?: (messageId: string) => void | Promise<void>;
+    onFork?: (messageId: string) => void | Promise<void>;
+  }) => {
+    const { t } = useTranslation("message");
+    const [regenerating, setRegenerating] = React.useState(false);
+    const [switchingBranch, setSwitchingBranch] = React.useState(false);
+    const [deleting, setDeleting] = React.useState(false);
+    const [forking, setForking] = React.useState(false);
 
-  const handleCopy = React.useCallback(async () => {
-    const text = buildCopyText(message.parts, t);
-    if (!text) return;
+    const handleCopy = React.useCallback(async () => {
+      const text = buildCopyText(message.parts, t);
+      if (!text) return;
 
-    try {
-      await copyTextToClipboard(text);
-    } catch {
-      // Ignore copy failures to keep action row interaction uninterrupted.
-    }
-  }, [message.parts, t]);
-
-  const handleRegenerate = React.useCallback(async () => {
-    if (!onRegenerate) return;
-
-    if (message.role === "USER") {
-      const confirmed = window.confirm(t("chat_message.regenerate_from_user_confirm"));
-      if (!confirmed) return;
-    }
-
-    setRegenerating(true);
-    try {
-      await onRegenerate(message.id);
-    } finally {
-      setRegenerating(false);
-    }
-  }, [message.id, message.role, onRegenerate, t]);
-
-  const handleSwitchBranch = React.useCallback(
-    async (selectIndex: number) => {
-      if (!onSelectBranch) return;
-      if (selectIndex < 0 || selectIndex > node.messages.length - 1) return;
-      if (selectIndex === node.selectIndex) return;
-
-      setSwitchingBranch(true);
       try {
-        await onSelectBranch(node.id, selectIndex);
-      } finally {
-        setSwitchingBranch(false);
+        await copyTextToClipboard(text);
+      } catch {
+        // Ignore copy failures to keep action row interaction uninterrupted.
       }
-    },
-    [node.id, node.messages.length, node.selectIndex, onSelectBranch],
-  );
+    }, [message.parts, t]);
 
-  const handleDelete = React.useCallback(async () => {
-    if (!onDelete) return;
+    const handleRegenerate = React.useCallback(async () => {
+      if (!onRegenerate) return;
 
-    const confirmed = window.confirm(t("chat_message.delete_confirm"));
-    if (!confirmed) return;
+      if (message.role === "USER") {
+        const confirmed = window.confirm(t("chat_message.regenerate_from_user_confirm"));
+        if (!confirmed) return;
+      }
 
-    setDeleting(true);
-    try {
-      await onDelete(message.id);
-    } finally {
-      setDeleting(false);
-    }
-  }, [message.id, onDelete, t]);
+      setRegenerating(true);
+      try {
+        await onRegenerate(message.id);
+      } finally {
+        setRegenerating(false);
+      }
+    }, [message.id, message.role, onRegenerate, t]);
 
-  const handleFork = React.useCallback(async () => {
-    if (!onFork) return;
+    const handleSwitchBranch = React.useCallback(
+      async (selectIndex: number) => {
+        if (!onSelectBranch) return;
+        if (selectIndex < 0 || selectIndex > node.messages.length - 1) return;
+        if (selectIndex === node.selectIndex) return;
 
-    setForking(true);
-    try {
-      await onFork(message.id);
-    } finally {
-      setForking(false);
-    }
-  }, [message.id, onFork]);
+        setSwitchingBranch(true);
+        try {
+          await onSelectBranch(node.id, selectIndex);
+        } finally {
+          setSwitchingBranch(false);
+        }
+      },
+      [node.id, node.messages.length, node.selectIndex, onSelectBranch],
+    );
 
-  const canSwitchBranch = Boolean(onSelectBranch) && node.messages.length > 1;
-  const canEdit =
-    Boolean(onEdit) &&
-    (message.role === "USER" || message.role === "ASSISTANT") &&
-    hasEditableContent(message.parts);
-  const actionDisabled = loading || switchingBranch || regenerating || deleting || forking;
+    const handleDelete = React.useCallback(async () => {
+      if (!onDelete) return;
 
-  return (
-    <div
-      className={cn(
-        "flex w-full items-center gap-1 opacity-75 transition-opacity hover:opacity-100",
-        alignRight ? "justify-end" : "justify-start",
-      )}
-    >
-      <Button
-        aria-label={t("chat_message.copy_message")}
-        disabled={actionDisabled}
-        onClick={() => {
-          void handleCopy();
-        }}
-        size="icon-xs"
-        title={t("chat_message.copy")}
-        type="button"
-        variant="ghost"
+      const confirmed = window.confirm(t("chat_message.delete_confirm"));
+      if (!confirmed) return;
+
+      setDeleting(true);
+      try {
+        await onDelete(message.id);
+      } finally {
+        setDeleting(false);
+      }
+    }, [message.id, onDelete, t]);
+
+    const handleFork = React.useCallback(async () => {
+      if (!onFork) return;
+
+      setForking(true);
+      try {
+        await onFork(message.id);
+      } finally {
+        setForking(false);
+      }
+    }, [message.id, onFork]);
+
+    const canSwitchBranch = Boolean(onSelectBranch) && node.messages.length > 1;
+    const canEdit =
+      Boolean(onEdit) &&
+      (message.role === "USER" || message.role === "ASSISTANT") &&
+      hasEditableContent(message.parts);
+    const actionDisabled = loading || switchingBranch || regenerating || deleting || forking;
+
+    return (
+      <div
+        className={cn(
+          "flex w-full items-center gap-1 opacity-75 transition-opacity hover:opacity-100",
+          alignRight ? "justify-end" : "justify-start",
+        )}
       >
-        <Copy className="size-3.5" />
-      </Button>
-
-      {canEdit && (
         <Button
-          aria-label={t("chat_message.edit_message")}
+          aria-label={t("chat_message.copy_message")}
           disabled={actionDisabled}
           onClick={() => {
-            void onEdit?.(message);
+            void handleCopy();
           }}
           size="icon-xs"
-          title={t("chat_message.edit")}
+          title={t("chat_message.copy")}
           type="button"
           variant="ghost"
         >
-          <Pencil className="size-3.5" />
+          <Copy className="size-3.5" />
         </Button>
-      )}
 
-      {onRegenerate && (
-        <Button
-          aria-label={t("chat_message.regenerate")}
-          disabled={actionDisabled}
-          onClick={() => {
-            void handleRegenerate();
-          }}
-          size="icon-xs"
-          title={t("chat_message.regenerate")}
-          type="button"
-          variant="ghost"
-        >
-          <RefreshCw className={cn("size-3.5", regenerating && "animate-spin")} />
-        </Button>
-      )}
-
-      {onFork && (
-        <Button
-          aria-label={t("chat_message.create_fork")}
-          disabled={actionDisabled}
-          onClick={() => {
-            void handleFork();
-          }}
-          size="icon-xs"
-          title={t("chat_message.create_fork")}
-          type="button"
-          variant="ghost"
-          data-no-touch-enforce
-        >
-          <GitFork className={cn("size-3.5", forking && "animate-spin text-primary")} />
-        </Button>
-      )}
-
-      <Button
-        aria-label="Inspect cURL and Telemetry"
-        disabled={actionDisabled}
-        onClick={() => {
-          const detail = {
-            modelId: (message as any).modelId || "deepseek-v4-1-flash",
-            endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
-            providerSlug: "@model-aggregator",
-            promptTokens: message.usage?.promptTokens,
-            completionTokens: message.usage?.completionTokens,
-            totalTokens: message.usage?.totalTokens,
-            latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
-          };
-          window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
-        }}
-        size="icon-xs"
-        title="Inspect cURL & Raw Telemetry"
-        type="button"
-        variant="ghost"
-        data-no-touch-enforce
-      >
-        <Terminal className="size-3.5" />
-      </Button>
-
-      {canSwitchBranch && (
-        <>
+        {canEdit && (
           <Button
-            aria-label={t("chat_message.previous_branch")}
-            disabled={actionDisabled || node.selectIndex <= 0}
-            onClick={() => {
-              void handleSwitchBranch(node.selectIndex - 1);
-            }}
-            size="icon-xs"
-            title={t("chat_message.previous_branch")}
-            type="button"
-            variant="ghost"
-          >
-            <ChevronLeft className="size-3.5" />
-          </Button>
-          <span className="text-[11px] text-muted-foreground">
-            {node.selectIndex + 1}/{node.messages.length}
-          </span>
-          <Button
-            aria-label={t("chat_message.next_branch")}
-            disabled={actionDisabled || node.selectIndex >= node.messages.length - 1}
-            onClick={() => {
-              void handleSwitchBranch(node.selectIndex + 1);
-            }}
-            size="icon-xs"
-            title={t("chat_message.next_branch")}
-            type="button"
-            variant="ghost"
-          >
-            <ChevronRight className="size-3.5" />
-          </Button>
-        </>
-      )}
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            aria-label={t("chat_message.more_actions")}
+            aria-label={t("chat_message.edit_message")}
             disabled={actionDisabled}
+            onClick={() => {
+              void onEdit?.(message);
+            }}
             size="icon-xs"
-            title={t("chat_message.more_actions")}
+            title={t("chat_message.edit")}
             type="button"
             variant="ghost"
           >
-            <Ellipsis className="size-3.5" />
+            <Pencil className="size-3.5" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={alignRight ? "end" : "start"}>
-          <DropdownMenuItem
-            onSelect={() => {
-              const content = convertMessageToMarkdown(message, false);
-              downloadMarkdown(content, `message-${message.id}.md`);
+        )}
+
+        {onRegenerate && (
+          <Button
+            aria-label={t("chat_message.regenerate")}
+            disabled={actionDisabled}
+            onClick={() => {
+              void handleRegenerate();
             }}
+            size="icon-xs"
+            title={t("chat_message.regenerate")}
+            type="button"
+            variant="ghost"
           >
-            <FileDown className="size-3.5" />
-            {t("chat_message.export_markdown")}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={() => {
-              const content = convertMessageToMarkdown(message, true);
-              downloadMarkdown(content, `message-${message.id}.md`);
+            <RefreshCw className={cn("size-3.5", regenerating && "animate-spin")} />
+          </Button>
+        )}
+
+        {onFork && (
+          <Button
+            aria-label={t("chat_message.create_fork")}
+            disabled={actionDisabled}
+            onClick={() => {
+              void handleFork();
             }}
+            size="icon-xs"
+            title={t("chat_message.create_fork")}
+            type="button"
+            variant="ghost"
+            data-no-touch-enforce
           >
-            <FileDown className="size-3.5" />
-            {t("chat_message.export_markdown_with_reasoning")}
-          </DropdownMenuItem>
-          {onFork && (
-            <DropdownMenuItem
-              disabled={actionDisabled}
-              onSelect={() => {
-                void handleFork();
-              }}
-            >
-              <GitFork className="size-3.5" />
-              {t("chat_message.create_fork")}
-            </DropdownMenuItem>
-          )}
-          {onDelete && (
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={actionDisabled}
-              onSelect={() => {
-                void handleDelete();
-              }}
-            >
-              <Trash2 className="size-3.5" />
-              {t("chat_message.delete")}
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-});
+            <GitFork className={cn("size-3.5", forking && "animate-spin text-primary")} />
+          </Button>
+        )}
 
-export const ChatMessageNerdLineRow = React.memo(({
-  message,
-  alignRight,
-  displaySetting,
-}: {
-  message: MessageDto;
-  alignRight: boolean;
-  displaySetting?: DisplaySetting | null;
-}) => {
-  const { t } = useTranslation("message");
-
-  if (!message.usage || displaySetting?.showTokenUsage === false) {
-    return null;
-  }
-
-  const stats = getNerdStats(message.usage, message.createdAt, message.finishedAt, t);
-  if (stats.length === 0) return null;
-
-  const handleOpenInspector = () => {
-    const detail = {
-      modelId: (message as any).modelId || "deepseek-v4-1-flash",
-      endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
-      providerSlug: "@model-aggregator",
-      promptTokens: message.usage?.promptTokens,
-      completionTokens: message.usage?.completionTokens,
-      totalTokens: message.usage?.totalTokens,
-      latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
-    };
-    window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
-  };
-
-  return (
-    <div
-      className={cn(
-        "flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[10px]",
-        alignRight ? "justify-end" : "justify-start",
-      )}
-    >
-      {stats.map((item) => (
-        <span
-          key={item.key}
-          className="telemetry-badge nerd-badge shrink-0"
+        <Button
+          aria-label="Inspect cURL and Telemetry"
+          disabled={actionDisabled}
+          onClick={() => {
+            const detail = {
+              modelId: (message as any).modelId || "deepseek-v4-1-flash",
+              endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
+              providerSlug: "@model-aggregator",
+              promptTokens: message.usage?.promptTokens,
+              completionTokens: message.usage?.completionTokens,
+              totalTokens: message.usage?.totalTokens,
+              latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
+            };
+            window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
+          }}
+          size="icon-xs"
+          title="Inspect cURL & Raw Telemetry"
+          type="button"
+          variant="ghost"
           data-no-touch-enforce
         >
-          {item.icon}
-          <span>{item.label}</span>
-        </span>
-      ))}
-      <button
-        type="button"
-        id="inspect-raw-btn"
-        data-no-touch-enforce
-        onClick={handleOpenInspector}
-        className="telemetry-badge nerd-badge shrink-0 cursor-pointer border-primary/30 text-primary hover:bg-primary/10 active:scale-[0.96]"
-        title="Inspect raw protocol, cURL, and latency telemetry"
-      >
-        <Terminal className="size-2.5" />
-        <span>cURL / Inspector</span>
-      </button>
-    </div>
-  );
-});
+          <Terminal className="size-3.5" />
+        </Button>
 
-export const ChatMessage = React.memo(({
-  node,
-  message,
-  loading = false,
-  isLastMessage = false,
-  assistant,
-  displaySetting,
-  model: _model,
-  onEdit,
-  onRegenerate,
-  onSelectBranch,
-  onDelete,
-  onFork,
-  onToolApproval,
-}: ChatMessageProps) => {
-  const isUser = message.role === "USER";
-  const hasMessageContent = message.parts.some(hasRenderablePart);
-  const showActions = isLastMessage ? !loading : hasMessageContent;
-  const citationUrlMap = React.useMemo(() => buildCitationUrlMap(message.parts), [message.parts]);
-  const handleClickCitation = React.useCallback(
-    (citationId: string) => {
-      const url = citationUrlMap.get(citationId.trim());
-      if (!url || typeof window === "undefined") return;
-      window.open(url, "_blank", "noopener,noreferrer");
-    },
-    [citationUrlMap],
-  );
+        {canSwitchBranch && (
+          <>
+            <Button
+              aria-label={t("chat_message.previous_branch")}
+              disabled={actionDisabled || node.selectIndex <= 0}
+              onClick={() => {
+                void handleSwitchBranch(node.selectIndex - 1);
+              }}
+              size="icon-xs"
+              title={t("chat_message.previous_branch")}
+              type="button"
+              variant="ghost"
+            >
+              <ChevronLeft className="size-3.5" />
+            </Button>
+            <span className="text-[11px] text-muted-foreground">
+              {node.selectIndex + 1}/{node.messages.length}
+            </span>
+            <Button
+              aria-label={t("chat_message.next_branch")}
+              disabled={actionDisabled || node.selectIndex >= node.messages.length - 1}
+              onClick={() => {
+                void handleSwitchBranch(node.selectIndex + 1);
+              }}
+              size="icon-xs"
+              title={t("chat_message.next_branch")}
+              type="button"
+              variant="ghost"
+            >
+              <ChevronRight className="size-3.5" />
+            </Button>
+          </>
+        )}
 
-  return (
-    <div
-      className={cn("flex flex-col gap-2.5", isUser ? "items-end" : "items-start")}
-      data-message-role={message.role.toLowerCase()}
-      data-message-loading={loading || undefined}
-    >
-      <div className="flex w-full flex-col gap-1.5">
-        <ChatMessageAvatarRow
-          message={message}
-          hasMessageContent={hasMessageContent}
-          assistant={assistant}
-          displaySetting={displaySetting}
-        />
-
-        <div
-          className={cn(
-            "flex w-full",
-            isUser ? "justify-end" : "justify-start",
-          )}
-        >
-          <div
-            data-message-bubble
-            className={cn(
-              "flex flex-col gap-2 text-sm",
-              isUser
-                ? cn(
-                    CHAT_USER_BUBBLE_MAX_WIDTH_CLASSNAME,
-                    "rounded-[var(--radius-bubble)] border border-primary/10 bg-primary px-4 py-3.5 text-primary-foreground shadow-sm",
-                  )
-                : "w-full rounded-[var(--radius-bubble)] bg-transparent px-0 py-0",
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label={t("chat_message.more_actions")}
+              disabled={actionDisabled}
+              size="icon-xs"
+              title={t("chat_message.more_actions")}
+              type="button"
+              variant="ghost"
+            >
+              <Ellipsis className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={alignRight ? "end" : "start"}>
+            <DropdownMenuItem
+              onSelect={() => {
+                const content = convertMessageToMarkdown(message, false);
+                downloadMarkdown(content, `message-${message.id}.md`);
+              }}
+            >
+              <FileDown className="size-3.5" />
+              {t("chat_message.export_markdown")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                const content = convertMessageToMarkdown(message, true);
+                downloadMarkdown(content, `message-${message.id}.md`);
+              }}
+            >
+              <FileDown className="size-3.5" />
+              {t("chat_message.export_markdown_with_reasoning")}
+            </DropdownMenuItem>
+            {onFork && (
+              <DropdownMenuItem
+                disabled={actionDisabled}
+                onSelect={() => {
+                  void handleFork();
+                }}
+              >
+                <GitFork className="size-3.5" />
+                {t("chat_message.create_fork")}
+              </DropdownMenuItem>
             )}
+            {onDelete && (
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={actionDisabled}
+                onSelect={() => {
+                  void handleDelete();
+                }}
+              >
+                <Trash2 className="size-3.5" />
+                {t("chat_message.delete")}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  },
+);
+
+export const ChatMessageNerdLineRow = React.memo(
+  ({
+    message,
+    alignRight,
+    displaySetting,
+  }: {
+    message: MessageDto;
+    alignRight: boolean;
+    displaySetting?: DisplaySetting | null;
+  }) => {
+    const { t } = useTranslation("message");
+
+    if (!message.usage || displaySetting?.showTokenUsage === false) {
+      return null;
+    }
+
+    const stats = getNerdStats(message.usage, message.createdAt, message.finishedAt, t);
+    if (stats.length === 0) return null;
+
+    const handleOpenInspector = () => {
+      const detail = {
+        modelId: (message as any).modelId || "deepseek-v4-1-flash",
+        endpoint: "https://relay-gw.pages.dev/v1/chat/completions",
+        providerSlug: "@model-aggregator",
+        promptTokens: message.usage?.promptTokens,
+        completionTokens: message.usage?.completionTokens,
+        totalTokens: message.usage?.totalTokens,
+        latencyMs: getDurationMs(message.createdAt, message.finishedAt) ?? 142,
+      };
+      window.dispatchEvent(new CustomEvent("lastlab:open-inspector", { detail }));
+    };
+
+    return (
+      <div
+        className={cn(
+          "flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[10px]",
+          alignRight ? "justify-end" : "justify-start",
+        )}
+      >
+        {stats.map((item) => (
+          <span
+            key={item.key}
+            className="telemetry-badge nerd-badge shrink-0"
+            data-no-touch-enforce
           >
-            <MessageParts
-              parts={message.parts}
-              assistant={assistant}
-              displaySetting={displaySetting}
-              loading={loading}
-              onToolApproval={onToolApproval}
-              onClickCitation={handleClickCitation}
-            />
+            {item.icon}
+            <span>{item.label}</span>
+          </span>
+        ))}
+        <button
+          type="button"
+          id="inspect-raw-btn"
+          data-no-touch-enforce
+          onClick={handleOpenInspector}
+          className="telemetry-badge nerd-badge shrink-0 cursor-pointer border-primary/30 text-primary hover:bg-primary/10 active:scale-[0.96]"
+          title="Inspect raw protocol, cURL, and latency telemetry"
+        >
+          <Terminal className="size-2.5" />
+          <span>cURL / Inspector</span>
+        </button>
+      </div>
+    );
+  },
+);
+
+export const ChatMessage = React.memo(
+  ({
+    node,
+    message,
+    loading = false,
+    isLastMessage = false,
+    assistant,
+    displaySetting,
+    model: _model,
+    onEdit,
+    onRegenerate,
+    onSelectBranch,
+    onDelete,
+    onFork,
+    onToolApproval,
+  }: ChatMessageProps) => {
+    const isUser = message.role === "USER";
+    const hasMessageContent = message.parts.some(hasRenderablePart);
+    const showActions = isLastMessage ? !loading : hasMessageContent;
+    const citationUrlMap = React.useMemo(() => buildCitationUrlMap(message.parts), [message.parts]);
+    const handleClickCitation = React.useCallback(
+      (citationId: string) => {
+        const url = citationUrlMap.get(citationId.trim());
+        if (!url || typeof window === "undefined") return;
+        window.open(url, "_blank", "noopener,noreferrer");
+      },
+      [citationUrlMap],
+    );
+
+    return (
+      <div
+        className={cn("flex flex-col gap-2.5", isUser ? "items-end" : "items-start")}
+        data-message-role={message.role.toLowerCase()}
+        data-message-loading={loading || undefined}
+      >
+        <div className="flex w-full flex-col gap-1.5">
+          <ChatMessageAvatarRow
+            message={message}
+            hasMessageContent={hasMessageContent}
+            assistant={assistant}
+            displaySetting={displaySetting}
+          />
+
+          <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
+            <div
+              data-message-bubble
+              className={cn(
+                "flex flex-col gap-2 text-sm",
+                isUser
+                  ? cn(
+                      CHAT_USER_BUBBLE_MAX_WIDTH_CLASSNAME,
+                      "rounded-[var(--radius-bubble)] border border-primary/10 bg-primary px-4 py-3.5 text-primary-foreground shadow-sm",
+                    )
+                  : "w-full rounded-[var(--radius-bubble)] bg-transparent px-0 py-0",
+              )}
+            >
+              <MessageParts
+                parts={message.parts}
+                assistant={assistant}
+                displaySetting={displaySetting}
+                loading={loading}
+                onToolApproval={onToolApproval}
+                onClickCitation={handleClickCitation}
+              />
+            </div>
           </div>
         </div>
+
+        {showActions && (
+          <div data-message-actions>
+            <ChatMessageActionsRow
+              node={node}
+              message={message}
+              loading={loading}
+              alignRight={isUser}
+              onEdit={onEdit}
+              onRegenerate={onRegenerate}
+              onSelectBranch={onSelectBranch}
+              onDelete={onDelete}
+              onFork={onFork}
+            />
+          </div>
+        )}
+
+        <ChatMessageAnnotationsRow annotations={message.annotations} alignRight={isUser} />
+
+        <ChatMessageNerdLineRow
+          message={message}
+          alignRight={isUser}
+          displaySetting={displaySetting}
+        />
       </div>
-
-      {showActions && (
-        <div data-message-actions>
-          <ChatMessageActionsRow
-            node={node}
-            message={message}
-            loading={loading}
-            alignRight={isUser}
-            onEdit={onEdit}
-            onRegenerate={onRegenerate}
-            onSelectBranch={onSelectBranch}
-            onDelete={onDelete}
-            onFork={onFork}
-          />
-        </div>
-      )}
-
-      <ChatMessageAnnotationsRow annotations={message.annotations} alignRight={isUser} />
-
-      <ChatMessageNerdLineRow
-        message={message}
-        alignRight={isUser}
-        displaySetting={displaySetting}
-      />
-    </div>
-  );
-});
+    );
+  },
+);

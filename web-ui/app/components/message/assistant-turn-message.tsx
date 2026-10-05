@@ -1,8 +1,5 @@
 import * as React from "react";
-import {
-  AnimatePresence,
-  motion,
-} from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { useTranslation } from "react-i18next";
 
@@ -21,7 +18,13 @@ import {
 } from "~/lib/message-turns";
 import { getChatLayoutTransition, useChatReducedMotion } from "~/lib/chat-motion";
 import { cn } from "~/lib/utils";
-import type { AssistantProfile, DisplaySetting, ProviderModel, TokenUsage, UIMessagePart } from "~/types";
+import type {
+  AssistantProfile,
+  DisplaySetting,
+  ProviderModel,
+  TokenUsage,
+  UIMessagePart,
+} from "~/types";
 
 function hasRenderableContentPart(part: UIMessagePart): boolean {
   switch (part.type) {
@@ -62,7 +65,9 @@ function buildCitationUrlMap(parts: UIMessagePart[]): Map<string, string> {
   parts.forEach((part) => {
     if (part.type !== "tool" || part.toolName !== "search_web") return;
     const outputText = part.output
-      .filter((outputPart): outputPart is { type: "text"; text: string } => outputPart.type === "text")
+      .filter(
+        (outputPart): outputPart is { type: "text"; text: string } => outputPart.type === "text",
+      )
       .map((outputPart) => outputPart.text)
       .join("\n");
     const parsed = parseToolOutputJson(outputText);
@@ -83,7 +88,9 @@ function buildCitationUrlMap(parts: UIMessagePart[]): Map<string, string> {
 }
 
 function combineUsage(turn: AssistantTurnGroup): TokenUsage | null {
-  const usages = turn.items.map((item) => item.message.usage).filter((usage): usage is TokenUsage => Boolean(usage));
+  const usages = turn.items
+    .map((item) => item.message.usage)
+    .filter((usage): usage is TokenUsage => Boolean(usage));
   if (usages.length === 0) return null;
 
   return {
@@ -97,10 +104,11 @@ function combineUsage(turn: AssistantTurnGroup): TokenUsage | null {
 function buildStatsMessage(turn: AssistantTurnGroup) {
   const usage = combineUsage(turn);
   const createdAt = turn.items[0]?.message.createdAt ?? turn.displayMessage.createdAt;
-  const finishedAt = [...turn.items]
-    .reverse()
-    .map((item) => item.message.finishedAt)
-    .find((value) => value != null) ?? turn.displayMessage.finishedAt;
+  const finishedAt =
+    [...turn.items]
+      .reverse()
+      .map((item) => item.message.finishedAt)
+      .find((value) => value != null) ?? turn.displayMessage.finishedAt;
 
   return {
     ...turn.displayMessage,
@@ -132,7 +140,12 @@ export function AssistantTurnMessage({
   onSelectBranch?: (nodeId: string, selectIndex: number) => void | Promise<void>;
   onDelete?: (messageId: string) => void | Promise<void>;
   onFork?: (messageId: string) => void | Promise<void>;
-  onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
+  onToolApproval?: (
+    toolCallId: string,
+    approved: boolean,
+    reason: string,
+    answer?: string,
+  ) => void | Promise<void>;
 }) {
   const { t: _t } = useTranslation("message");
   const reducedMotion = useChatReducedMotion();
@@ -150,17 +163,15 @@ export function AssistantTurnMessage({
   );
   const citationUrlMap = React.useMemo(() => buildCitationUrlMap(turn.allParts), [turn.allParts]);
   const statsMessage = React.useMemo(() => buildStatsMessage(turn), [turn]);
-  const hasMessageContent = turn.contentParts.some(hasRenderableContentPart) || activityState.type !== "hidden";
+  const hasMessageContent =
+    turn.contentParts.some(hasRenderableContentPart) || activityState.type !== "hidden";
   const allowLayoutAnimation = !loading;
-  const latestToolActivityType = React.useMemo(
-    () => {
-      const latestToolEntry = [...timelineEntries]
-        .reverse()
-        .find((entry) => entry.type === "tool" && entry.isLoading);
-      return latestToolEntry?.type === "tool" ? latestToolEntry.activityType : null;
-    },
-    [timelineEntries],
-  );
+  const latestToolActivityType = React.useMemo(() => {
+    const latestToolEntry = [...timelineEntries]
+      .reverse()
+      .find((entry) => entry.type === "tool" && entry.isLoading);
+    return latestToolEntry?.type === "tool" ? latestToolEntry.activityType : null;
+  }, [timelineEntries]);
 
   const handleClickCitation = React.useCallback(
     (citationId: string) => {
@@ -196,7 +207,11 @@ export function AssistantTurnMessage({
               layout={allowLayoutAnimation}
               initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4, transition: { duration: 0.12 } }}
+              exit={
+                reducedMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: -4, transition: { duration: 0.12 } }
+              }
               transition={getChatLayoutTransition(reducedMotion)}
               className="flex w-full justify-start"
             >
@@ -210,7 +225,11 @@ export function AssistantTurnMessage({
               layout={allowLayoutAnimation}
               initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4, transition: { duration: 0.12 } }}
+              exit={
+                reducedMotion
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: -4, transition: { duration: 0.12 } }
+              }
               transition={getChatLayoutTransition(reducedMotion)}
               className="flex w-full justify-start"
             >

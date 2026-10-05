@@ -1,7 +1,4 @@
-import type {
-  AssistantProfile,
-  DisplaySetting,
-} from "~/types";
+import type { AssistantProfile, DisplaySetting } from "~/types";
 
 export function resolveEffectiveDisplaySetting(
   displaySetting: DisplaySetting | null | undefined,

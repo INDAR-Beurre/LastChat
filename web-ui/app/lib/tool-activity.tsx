@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { TFunction } from "i18next";
-import { AudioLines,
+import {
+  AudioLines,
   BookHeart,
   BookX,
   Check,
@@ -12,7 +13,8 @@ import { AudioLines,
   MessageCircleQuestion,
   Video,
   Wrench,
-  X, } from "~/lib/material-icons";
+  X,
+} from "~/lib/material-icons";
 
 import Markdown from "~/components/markdown/markdown";
 import { DocumentPart } from "~/components/message/parts/document-part";
@@ -86,7 +88,7 @@ function extractBalancedJsonSlice(input: string): string | null {
       continue;
     }
 
-    if (char === "\"") {
+    if (char === '"') {
       inString = !inString;
       continue;
     }
@@ -131,7 +133,9 @@ export function safeJsonParse(input: string): unknown {
     extractBalancedJsonSlice(trimmed),
     fenced ? extractBalancedJsonSlice(fenced) : null,
   ].filter((candidate, index, values): candidate is string => {
-    return typeof candidate === "string" && candidate.length > 0 && values.indexOf(candidate) === index;
+    return (
+      typeof candidate === "string" && candidate.length > 0 && values.indexOf(candidate) === index
+    );
   });
 
   for (const candidate of candidates) {
@@ -207,7 +211,9 @@ export function getToolTitle(toolName: string, args: unknown, t: TFunction): str
 }
 
 export function toolHasMediaOutput(tool: UIToolPart): boolean {
-  return tool.output.some((part) => part.type === "image" || part.type === "video" || part.type === "audio");
+  return tool.output.some(
+    (part) => part.type === "image" || part.type === "video" || part.type === "audio",
+  );
 }
 
 export function getToolPreviewText(tool: UIToolPart, t: TFunction): string | null {
@@ -389,7 +395,8 @@ export function parseAskUserQuestions(args: unknown): AskUserQuestion[] {
                   return null;
                 }
                 const optionRecord = option as Record<string, unknown>;
-                const label = typeof optionRecord.label === "string" ? optionRecord.label.trim() : "";
+                const label =
+                  typeof optionRecord.label === "string" ? optionRecord.label.trim() : "";
                 if (!label) return null;
                 const description =
                   typeof optionRecord.description === "string"
@@ -409,7 +416,9 @@ export function parseAskUserQuestions(args: unknown): AskUserQuestion[] {
   }
 }
 
-export function parseAskUserAnswerPayload(raw: string | null | undefined): AskUserAnswerPayload | null {
+export function parseAskUserAnswerPayload(
+  raw: string | null | undefined,
+): AskUserAnswerPayload | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -420,14 +429,10 @@ export function parseAskUserAnswerPayload(raw: string | null | undefined): AskUs
         const record = answer as Record<string, unknown>;
         const id = typeof record.id === "string" ? record.id : "";
         const status: AskUserAnswer["status"] | null =
-          record.status === "answered" || record.status === "skipped"
-            ? record.status
-            : null;
+          record.status === "answered" || record.status === "skipped" ? record.status : null;
         if (!id || !status) return null;
         const source: AskUserAnswer["source"] =
-          record.source === "option" || record.source === "custom"
-            ? record.source
-            : undefined;
+          record.source === "option" || record.source === "custom" ? record.source : undefined;
         const value: AskUserAnswer["value"] =
           typeof record.value === "string" ? record.value : undefined;
         const normalized: AskUserAnswer = { id, status };
@@ -446,13 +451,7 @@ export function parseAskUserAnswerPayload(raw: string | null | undefined): AskUs
   }
 }
 
-function AskUserToolContent({
-  tool,
-  t,
-}: {
-  tool: UIToolPart;
-  t: TFunction;
-}) {
+function AskUserToolContent({ tool, t }: { tool: UIToolPart; t: TFunction }) {
   const args = React.useMemo(() => safeJsonParse(tool.input), [tool.input]);
   const questions = React.useMemo(() => parseAskUserQuestions(args), [args]);
   const answerPayload = React.useMemo(() => {
@@ -537,7 +536,12 @@ export function ToolDetailContent({
   tool: UIToolPart;
   t: TFunction;
   displaySetting?: DisplaySetting | null;
-  onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
+  onToolApproval?: (
+    toolCallId: string,
+    approved: boolean,
+    reason: string,
+    answer?: string,
+  ) => void | Promise<void>;
 }) {
   const args = React.useMemo(() => safeJsonParse(tool.input), [tool.input]);
   const outputContent = React.useMemo(() => parseOutputContent(tool), [tool]);
@@ -549,12 +553,7 @@ export function ToolDetailContent({
 
   if (tool.toolName === TOOL_NAMES.SEARCH_WEB && isExecuted) {
     return (
-      <SearchWebPreview
-        args={args}
-        content={outputContent}
-        t={t}
-        displaySetting={displaySetting}
-      />
+      <SearchWebPreview args={args} content={outputContent} t={t} displaySetting={displaySetting} />
     );
   }
 
@@ -603,7 +602,9 @@ export function ToolDetailContent({
               );
             }
             if (part.type === "audio") {
-              return <audio key={index} controls className="w-full" src={resolveFileUrl(part.url)} />;
+              return (
+                <audio key={index} controls className="w-full" src={resolveFileUrl(part.url)} />
+              );
             }
             if (part.type === "document") {
               return (
@@ -643,7 +644,8 @@ export function ToolPreviewContent({ tool, t }: { tool: UIToolPart; t: TFunction
       (memoryAction === MEMORY_ACTIONS.CREATE || memoryAction === MEMORY_ACTIONS.EDIT) &&
       Boolean(getStringField(outputContent, "content"))) ||
     (tool.toolName === TOOL_NAMES.SEARCH_WEB &&
-      (Boolean(getStringField(outputContent, "answer")) || getArrayField(outputContent, "items").length > 0)) ||
+      (Boolean(getStringField(outputContent, "answer")) ||
+        getArrayField(outputContent, "items").length > 0)) ||
     (tool.toolName === TOOL_NAMES.SCRAPE_WEB && Boolean(getStringField(args, "url"))) ||
     tool.approvalState.type === "denied" ||
     hasMediaOutput;
@@ -658,8 +660,12 @@ export function ToolPreviewContent({ tool, t }: { tool: UIToolPart; t: TFunction
             ? t("tool_part.ask_user_waiting")
             : tool.approvalState.type === "answered"
               ? t("tool_part.ask_user_answer_summary", {
-                  answered: askUserAnswers?.answers.filter((answer) => answer.status === "answered").length ?? 0,
-                  skipped: askUserAnswers?.answers.filter((answer) => answer.status === "skipped").length ?? 0,
+                  answered:
+                    askUserAnswers?.answers.filter((answer) => answer.status === "answered")
+                      .length ?? 0,
+                  skipped:
+                    askUserAnswers?.answers.filter((answer) => answer.status === "skipped")
+                      .length ?? 0,
                 })
               : getToolPreviewText(tool, t)}
         </div>
@@ -678,19 +684,26 @@ export function ToolPreviewContent({ tool, t }: { tool: UIToolPart; t: TFunction
         </div>
       ) : null}
 
-      {tool.toolName === TOOL_NAMES.SEARCH_WEB && getArrayField(outputContent, "items").length > 0 ? (
+      {tool.toolName === TOOL_NAMES.SEARCH_WEB &&
+      getArrayField(outputContent, "items").length > 0 ? (
         <div className="text-muted-foreground text-xs">
-          {t("tool_part.search_results_count", { count: getArrayField(outputContent, "items").length })}
+          {t("tool_part.search_results_count", {
+            count: getArrayField(outputContent, "items").length,
+          })}
         </div>
       ) : null}
 
       {tool.toolName === TOOL_NAMES.SCRAPE_WEB && getStringField(args, "url") ? (
-        <div className="line-clamp-2 text-muted-foreground text-xs">{getStringField(args, "url")}</div>
+        <div className="line-clamp-2 text-muted-foreground text-xs">
+          {getStringField(args, "url")}
+        </div>
       ) : null}
 
       {tool.approvalState.type === "denied" ? (
         <div className="text-destructive text-xs">
-          {deniedReason ? t("tool_part.denied_with_reason", { reason: deniedReason }) : t("tool_part.denied")}
+          {deniedReason
+            ? t("tool_part.denied_with_reason", { reason: deniedReason })
+            : t("tool_part.denied")}
         </div>
       ) : null}
 
@@ -744,10 +757,19 @@ export function ToolApprovalActions({
   t,
 }: {
   tool: UIToolPart;
-  onToolApproval?: (toolCallId: string, approved: boolean, reason: string, answer?: string) => void | Promise<void>;
+  onToolApproval?: (
+    toolCallId: string,
+    approved: boolean,
+    reason: string,
+    answer?: string,
+  ) => void | Promise<void>;
   t: TFunction;
 }) {
-  if (tool.approvalState.type !== "pending" || !onToolApproval || tool.toolName === TOOL_NAMES.ASK_USER) {
+  if (
+    tool.approvalState.type !== "pending" ||
+    !onToolApproval ||
+    tool.toolName === TOOL_NAMES.ASK_USER
+  ) {
     return null;
   }
 

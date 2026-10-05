@@ -1,18 +1,34 @@
-import { visit } from 'unist-util-visit';
-import type { Node, Parent } from 'unist';
-import type { RpStyleRule } from '~/types';
+import { visit } from "unist-util-visit";
+import type { Node, Parent } from "unist";
+import type { RpStyleRule } from "~/types";
 
-const STANDARD_PATTERNS = new Set(["*", "**", "~~", "`", "#", "##", "###", "####", "#####", "######", ">", "==", "++", "<mark>", "<u>"]);
+const STANDARD_PATTERNS = new Set([
+  "*",
+  "**",
+  "~~",
+  "`",
+  "#",
+  "##",
+  "###",
+  "####",
+  "#####",
+  "######",
+  ">",
+  "==",
+  "++",
+  "<mark>",
+  "<u>",
+]);
 
 export default function remarkRp(rules?: RpStyleRule[]) {
   return (tree: Node) => {
     if (!rules || rules.length === 0) return;
 
     // Filter out standard ones and disabled ones
-    const customRules = rules.filter(r => r.enabled && !STANDARD_PATTERNS.has(r.pattern));
+    const customRules = rules.filter((r) => r.enabled && !STANDARD_PATTERNS.has(r.pattern));
     if (customRules.length === 0) return;
 
-    visit(tree, 'text', (node: any, index: number, parent: Parent) => {
+    visit(tree, "text", (node: any, index: number, parent: Parent) => {
       let currentString = node.value;
       if (!currentString) return;
 
@@ -21,8 +37,8 @@ export default function remarkRp(rules?: RpStyleRule[]) {
 
       for (const rule of customRules) {
         // Escape pattern for regex
-        const escaped = rule.pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`${escaped}(.+?)${escaped}`, 'g');
+        const escaped = rule.pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`${escaped}(.+?)${escaped}`, "g");
         let m;
         while ((m = regex.exec(currentString)) !== null) {
           matches.push({
@@ -30,7 +46,7 @@ export default function remarkRp(rules?: RpStyleRule[]) {
             end: m.index + m[0].length,
             content: m[1],
             color: rule.colorHex,
-            pattern: rule.pattern
+            pattern: rule.pattern,
           });
         }
       }
@@ -39,7 +55,7 @@ export default function remarkRp(rules?: RpStyleRule[]) {
 
       // Sort by start index
       matches.sort((a, b) => a.start - b.start);
-      
+
       // Remove overlaps
       const nonOverlapping: Match[] = [];
       let lastEnd = -1;
@@ -58,16 +74,16 @@ export default function remarkRp(rules?: RpStyleRule[]) {
       for (const m of nonOverlapping) {
         if (m.start > currentIndex) {
           newNodes.push({
-            type: 'text',
-            value: currentString.substring(currentIndex, m.start)
+            type: "text",
+            value: currentString.substring(currentIndex, m.start),
           });
         }
-        
+
         // Push HTML node wrapping the content
         // This will be parsed by rehype-raw
         newNodes.push({
-          type: 'html',
-          value: `<span style="color: ${m.color}">${m.content}</span>`
+          type: "html",
+          value: `<span style="color: ${m.color}">${m.content}</span>`,
         });
 
         currentIndex = m.end;
@@ -75,14 +91,14 @@ export default function remarkRp(rules?: RpStyleRule[]) {
 
       if (currentIndex < currentString.length) {
         newNodes.push({
-          type: 'text',
-          value: currentString.substring(currentIndex)
+          type: "text",
+          value: currentString.substring(currentIndex),
         });
       }
 
       // Replace the current node with newNodes in parent
       parent.children.splice(index, 1, ...newNodes);
-      
+
       // Return the new index to visit to avoid visiting the newly added text nodes infinitely
       return index + newNodes.length;
     });
