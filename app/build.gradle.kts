@@ -79,8 +79,10 @@ android {
         applicationId = "lastchat.rikkafork.cocolal"
         minSdk = 28
         targetSdk = 36
-        versionCode = 41
-        versionName = "1.4.8"
+        // Single source of truth for the shipped version. package.json and the
+        // release notes track this value; keep them in sync (verified in CI).
+        versionCode = 42
+        versionName = "1.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

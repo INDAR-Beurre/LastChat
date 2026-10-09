@@ -90,8 +90,23 @@ public final class ApiServer {
         if (path.equals("/api/health")) {
             JSONObject body = new JSONObject();
             put(body, "status", "ok");
+            put(body, "version", "1.0.0");
             put(body, "gatewayConfigured", Boolean.valueOf(keyStore.isSet()));
+            put(body, "relayUrl", relayClient.getRelayBaseUrl());
+            put(body, "catalogTotal", Integer.valueOf(Models.idsOf(lastCatalog()).size()));
             responder.json(200, body);
+            return;
+        }
+        if (path.equals("/api/connection/ping") || path.equals("/api/connection/test")) {
+            handleConnectionPing(responder);
+            return;
+        }
+        if (path.equals("/api/models/refresh") || path.equals("/api/catalog/refresh")) {
+            handleRefreshModels(responder);
+            return;
+        }
+        if (path.equals("/api/gateway-url") || path.equals("/api/settings/connection")) {
+            handleGatewayUrl(method, rawBody, responder);
             return;
         }
         if (path.equals("/api/gateway-key")) {
@@ -105,7 +120,7 @@ public final class ApiServer {
             return;
         }
         if (path.equals("/api/settings") || path.startsWith("/api/settings/")) {
-            handleSettings(method, path, rawBody, responder);
+            handleSettings(method, path, query, rawBody, responder);
             return;
         }
         if (path.equals("/api/conversations")) {
@@ -136,11 +151,75 @@ public final class ApiServer {
         responder.json(404, LoopbackServer.errorJson("not_found", "Unknown endpoint: " + path));
     }
 
+    // -------------------------------------------------------------- connection & refresh
+
+    private void handleConnectionPing(Responder responder) {
+        RelayClient.PingResult res = relayClient.pingRelay(5000);
+        JSONObject body = new JSONObject();
+        put(body, "status", res.ok ? "ok" : "error");
+        put(body, "connected", Boolean.valueOf(res.ok));
+        put(body, "latencyMs", Long.valueOf(res.latencyMs));
+        put(body, "statusCode", Integer.valueOf(res.statusCode));
+        put(body, "gatewayConfigured", Boolean.valueOf(keyStore.isSet()));
+        put(body, "relayUrl", relayClient.getRelayBaseUrl());
+        if (res.error != null) {
+            put(body, "error", res.error);
+        }
+        responder.json(200, body);
+    }
+
+    private void handleRefreshModels(Responder responder) {
+        cachedCatalog = null;
+        catalogFetchedAt = 0;
+        JSONObject fresh = fetchCatalog();
+        boolean hasLiveModels = (fresh != null && !Models.idsOf(fresh).isEmpty());
+        if (hasLiveModels) {
+            cachedCatalog = fresh;
+            catalogFetchedAt = System.currentTimeMillis();
+        }
+        broadcastSettings();
+        JSONObject effective = hasLiveModels ? fresh : (cachedCatalog != null ? cachedCatalog : Models.defaultFallbackCatalog());
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "refreshed", Boolean.TRUE);
+        put(out, "catalogTotal", Integer.valueOf(Models.idsOf(effective).size()));
+        put(out, "catalogStale", Boolean.valueOf(!hasLiveModels));
+        responder.json(200, out);
+    }
+
+    private void handleGatewayUrl(String method, String rawBody, Responder responder) throws Exception {
+        if (method.equals("GET")) {
+            JSONObject body = new JSONObject();
+            put(body, "status", "ok");
+            put(body, "relayUrl", relayClient.getEffectiveRelayBaseUrl());
+            put(body, "defaultRelayUrl", relayClient.getRelayBaseUrl());
+            responder.json(200, body);
+            return;
+        }
+        if (method.equals("POST") || method.equals("PUT")) {
+            JSONObject in = parseBody(rawBody);
+            String url = in != null ? (in.has("relayUrl") ? in.optString("relayUrl", null) : in.optString("url", null)) : null;
+            relayClient.setCustomRelayBaseUrl(url);
+            platform.setPref("relay_base_url", url);
+            cachedCatalog = null;
+            catalogFetchedAt = 0;
+            broadcastSettings();
+            JSONObject body = new JSONObject();
+            put(body, "status", "ok");
+            put(body, "ok", Boolean.TRUE);
+            put(body, "relayUrl", relayClient.getEffectiveRelayBaseUrl());
+            responder.json(200, body);
+            return;
+        }
+        responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+    }
+
     // -------------------------------------------------------------- gateway key
 
     private void handleGatewayKey(String method, String rawBody, Responder responder) throws Exception {
         if (method.equals("GET")) {
             JSONObject body = new JSONObject();
+            put(body, "status", "ok");
             put(body, "configured", Boolean.valueOf(keyStore.isSet()));
             put(body, "masked", mask(keyStore.get()));
             responder.json(200, body);
@@ -150,13 +229,16 @@ public final class ApiServer {
             JSONObject in = parseBody(rawBody);
             String key = in == null ? null : in.optString("key", null);
             if (key == null || key.trim().isEmpty()) {
-                responder.json(400, LoopbackServer.errorJson("invalid_request",
+                responder.json(400, LoopbackServer.errorJson("bad_request",
                         "Enter your Relay Gateway key."));
                 return;
             }
             keyStore.set(key.trim());
+            cachedCatalog = null;
+            catalogFetchedAt = 0;
             broadcastSettings();
             JSONObject body = new JSONObject();
+            put(body, "status", "ok");
             put(body, "ok", Boolean.TRUE);
             put(body, "masked", mask(keyStore.get()));
             responder.json(200, body);
@@ -164,8 +246,11 @@ public final class ApiServer {
         }
         if (method.equals("DELETE")) {
             keyStore.set(null);
+            cachedCatalog = null;
+            catalogFetchedAt = 0;
             broadcastSettings();
             JSONObject body = new JSONObject();
+            put(body, "status", "ok");
             put(body, "ok", Boolean.TRUE);
             responder.json(200, body);
             return;
@@ -182,20 +267,90 @@ public final class ApiServer {
 
     // ----------------------------------------------------------------- settings
 
-    private void handleSettings(String method, String path, String rawBody, Responder responder)
-            throws Exception {
-        // Sub-resources that mutate one field. These are handled here rather than by
-        // applySettings, whose top-level patch would otherwise accept the body, discard the
-        // field it names, and answer 200 — leaving the client believing the change stuck.
+    private void handleSettings(String method, String path, Map<String, String> query,
+            String rawBody, Responder responder) throws Exception {
+        // Sub-resources that mutate one field.
         if (path.equals("/api/settings/assistant/model")) {
-            if (!method.equals("POST")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
                 responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
                 return;
             }
             setAssistantModel(parseBody(rawBody), responder);
             return;
         }
+        if (path.equals("/api/settings/favorite-models")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setFavoriteModels(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/assistant")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setActiveAssistant(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/search/enabled")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setSearchEnabled(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/search/service")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setSearchService(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/model/built-in-tool")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setModelBuiltInTool(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/assistant/injections")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setAssistantInjections(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/assistant/thinking-budget")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setAssistantThinkingBudget(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/assistant/mcp")) {
+            if (!method.equals("POST") && !method.equals("PUT")) {
+                responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
+                return;
+            }
+            setAssistantMcp(parseBody(rawBody), responder);
+            return;
+        }
+        if (path.equals("/api/settings/refresh")) {
+            handleRefreshModels(responder);
+            return;
+        }
         if (method.equals("GET")) {
+            if (query != null && "true".equalsIgnoreCase(query.get("refresh"))) {
+                cachedCatalog = null;
+                catalogFetchedAt = 0;
+            }
             responder.json(200, settingsPayload());
             return;
         }
@@ -211,11 +366,180 @@ public final class ApiServer {
         responder.json(405, LoopbackServer.errorJson("method_not_allowed", method));
     }
 
+    private JSONObject findAssistant(String id) {
+        Object list = settings.get("assistants");
+        if (!(list instanceof JSONArray)) {
+            return null;
+        }
+        JSONArray assistants = (JSONArray) list;
+        for (int i = 0; i < assistants.length(); i++) {
+            JSONObject a = assistants.optJSONObject(i);
+            if (a != null && id.equals(a.optString("id", ""))) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    private void setFavoriteModels(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        JSONArray list = in.optJSONArray("modelIds");
+        if (list == null) {
+            list = in.optJSONArray("favoriteModels");
+        }
+        if (list == null) {
+            list = new JSONArray();
+        }
+        settings.put("favoriteModels", list);
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "favoriteModels", list);
+        responder.json(200, out);
+    }
+
+    private void setActiveAssistant(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        String id = in.optString("assistantId", DEFAULT_ASSISTANT_ID);
+        settings.put("assistantId", id);
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "assistantId", id);
+        responder.json(200, out);
+    }
+
+    private void setSearchEnabled(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        boolean enabled = in.optBoolean("enabled", false);
+        settings.put("enableWebSearch", Boolean.valueOf(enabled));
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "enableWebSearch", Boolean.valueOf(enabled));
+        responder.json(200, out);
+    }
+
+    private void setSearchService(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        int index = in.optInt("index", 0);
+        settings.put("searchServiceSelected", Integer.valueOf(index));
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "searchServiceSelected", Integer.valueOf(index));
+        responder.json(200, out);
+    }
+
+    private void setModelBuiltInTool(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        String modelId = in.optString("modelId", "");
+        String tool = in.optString("tool", "");
+        boolean enabled = in.optBoolean("enabled", false);
+        Object existing = settings.get("modelBuiltInTools");
+        JSONObject toolConfigs = existing instanceof JSONObject ? (JSONObject) existing : new JSONObject();
+        settings.put("modelBuiltInTools", toolConfigs);
+        JSONObject modelTools = toolConfigs.optJSONObject(modelId);
+        if (modelTools == null) {
+            modelTools = new JSONObject();
+            put(toolConfigs, modelId, modelTools);
+        }
+        put(modelTools, tool, Boolean.valueOf(enabled));
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        responder.json(200, out);
+    }
+
+    private void setAssistantInjections(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        String assistantId = in.optString("assistantId", DEFAULT_ASSISTANT_ID);
+        JSONObject assistant = findAssistant(assistantId);
+        if (assistant == null) {
+            responder.json(404, LoopbackServer.errorJson("no_such_assistant", assistantId));
+            return;
+        }
+        if (in.has("modeInjectionIds")) {
+            put(assistant, "modeInjectionIds", in.optJSONArray("modeInjectionIds"));
+        }
+        if (in.has("lorebookIds")) {
+            put(assistant, "lorebookIds", in.optJSONArray("lorebookIds"));
+        }
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        responder.json(200, out);
+    }
+
+    private void setAssistantThinkingBudget(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        String assistantId = in.optString("assistantId", DEFAULT_ASSISTANT_ID);
+        JSONObject assistant = findAssistant(assistantId);
+        if (assistant == null) {
+            responder.json(404, LoopbackServer.errorJson("no_such_assistant", assistantId));
+            return;
+        }
+        int budget = in.optInt("thinkingBudget", 0);
+        put(assistant, "thinkingBudget", Integer.valueOf(budget));
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        put(out, "thinkingBudget", Integer.valueOf(budget));
+        responder.json(200, out);
+    }
+
+    private void setAssistantMcp(JSONObject in, Responder responder) {
+        if (in == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "expected JSON"));
+            return;
+        }
+        String assistantId = in.optString("assistantId", DEFAULT_ASSISTANT_ID);
+        JSONObject assistant = findAssistant(assistantId);
+        if (assistant == null) {
+            responder.json(404, LoopbackServer.errorJson("no_such_assistant", assistantId));
+            return;
+        }
+        JSONArray mcp = in.optJSONArray("mcpServerIds");
+        if (mcp != null) {
+            put(assistant, "mcpServers", mcp);
+        }
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        responder.json(200, out);
+    }
+
     /**
      * Sets the chat model of one assistant.
-     *
-     * <p>Answers 404 for an unknown assistant rather than silently doing nothing: the client
-     * treats a 2xx as success and would never recover from a model that silently did not change.
      */
     private void setAssistantModel(JSONObject in, Responder responder) {
         if (in == null) {
@@ -224,31 +548,22 @@ public final class ApiServer {
         }
         String assistantId = in.optString("assistantId", "");
         String modelId = in.optString("modelId", "");
-        Object list = settings.get("assistants");
-        if (!(list instanceof JSONArray)) {
+        JSONObject assistant = findAssistant(assistantId);
+        if (assistant == null) {
             responder.json(404, LoopbackServer.errorJson("no_such_assistant", assistantId));
             return;
         }
-        JSONArray assistants = (JSONArray) list;
-        for (int i = 0; i < assistants.length(); i++) {
-            JSONObject assistant = assistants.optJSONObject(i);
-            if (assistant != null && assistantId.equals(assistant.optString("id", ""))) {
-                put(assistant, "chatModelId", modelId);
-                broadcastSettings();
-                JSONObject out = new JSONObject();
-                put(out, "status", "ok");
-                responder.json(200, out);
-                return;
-            }
-        }
-        responder.json(404, LoopbackServer.errorJson("no_such_assistant", assistantId));
+        put(assistant, "chatModelId", modelId);
+        settings.put("chatModelId", modelId);
+        persistSettings();
+        broadcastSettings();
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        responder.json(200, out);
     }
 
     /**
      * Applies a settings patch.
-     *
-     * <p>Top-level keys the client does not model as nested objects — {@code chatModelId},
-     * {@code favoriteModels}, {@code dynamicColor}, … — are stored as they arrive.
      */
     private void applySettings(JSONObject in) {
         for (Iterator<String> it = in.keys(); it.hasNext(); ) {
@@ -265,6 +580,7 @@ public final class ApiServer {
                 settings.put(k, merged);
             }
         }
+        persistSettings();
     }
 
     /**
@@ -281,12 +597,15 @@ public final class ApiServer {
         }
 
         JSONObject catalog = fetchCatalog();
-        boolean stale = catalog == null;
-        if (!stale) {
+        boolean hasLive = (catalog != null && !Models.idsOf(catalog).isEmpty());
+        boolean stale = !hasLive;
+        if (hasLive) {
             cachedCatalog = catalog;
             catalogFetchedAt = System.currentTimeMillis();
-        } else {
+        } else if (cachedCatalog != null && !Models.idsOf(cachedCatalog).isEmpty()) {
             catalog = cachedCatalog;
+        } else {
+            catalog = Models.defaultFallbackCatalog();
         }
 
         put(out, "gatewayConfigured", Boolean.valueOf(keyStore.isSet()));
@@ -296,9 +615,10 @@ public final class ApiServer {
         put(out, "catalogStale", Boolean.valueOf(stale));
         if (stale) {
             put(out, "catalogError",
-                    catalog == null
-                            ? "Model catalog unavailable: the relay gateway could not be reached."
-                            : "Showing the last catalog that loaded; the relay is unreachable.");
+                    (cachedCatalog != null && !Models.idsOf(cachedCatalog).isEmpty())
+                            ? "Showing the last catalog that loaded; the relay is unreachable."
+                            : "Model catalog using fallback baseline; relay gateway is unreachable.");
+            put(out, "catalogTotal", Integer.valueOf(Models.idsOf(catalog).size()));
         } else {
             put(out, "catalogError", JSONObject.NULL);
             put(out, "catalogTotal", Integer.valueOf(Models.idsOf(catalog).size()));
@@ -372,7 +692,8 @@ public final class ApiServer {
         put(provider, "enabled", Boolean.TRUE);
         put(provider, "name", "Relay Gateway");
         put(provider, "type", "OPENAI");
-        put(provider, "models", Models.toProviderModels(catalog));
+        JSONObject effective = catalog != null ? catalog : (cachedCatalog != null ? cachedCatalog : Models.defaultFallbackCatalog());
+        put(provider, "models", Models.toProviderModels(effective));
         providers.put(provider);
         return providers;
     }
@@ -457,6 +778,15 @@ public final class ApiServer {
                 responder.json(200, conversation);
                 return;
             }
+            if (method.equals("DELETE")) {
+                store.delete(conversationFile(id));
+                generations.remove(id);
+                broadcastListInvalidate(conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
+                JSONObject out = new JSONObject();
+                put(out, "status", "ok");
+                responder.json(200, out);
+                return;
+            }
             if (method.equals("PATCH") || method.equals("PUT")) {
                 JSONObject in = parseBody(rawBody);
                 if (in != null) {
@@ -490,20 +820,371 @@ public final class ApiServer {
                 put(conversation, "title", in.optString("title", ""));
             }
             persist(id, conversation);
+            broadcastListInvalidate(conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
             responder.json(200, status("ok"));
+            return;
+        }
+        if (tail.equals("regenerate-title") && method.equals("POST")) {
+            String title = generateConversationTitle(conversation);
+            put(conversation, "title", title);
+            persist(id, conversation);
+            broadcastListInvalidate(conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "title", title);
+            responder.json(200, out);
             return;
         }
         if (tail.equals("pin") && method.equals("POST")) {
             JSONObject in = parseBody(rawBody);
-            if (in != null) {
-                put(conversation, "isPinned", Boolean.valueOf(in.optBoolean("isPinned", false)));
+            boolean newPin;
+            if (in != null && in.has("isPinned")) {
+                newPin = in.optBoolean("isPinned", false);
+            } else {
+                newPin = !conversation.optBoolean("isPinned", false);
             }
+            put(conversation, "isPinned", Boolean.valueOf(newPin));
             persist(id, conversation);
+            broadcastListInvalidate(conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "isPinned", Boolean.valueOf(newPin));
+            responder.json(200, out);
+            return;
+        }
+        if (tail.equals("move") && method.equals("POST")) {
+            JSONObject in = parseBody(rawBody);
+            String target = in != null ? in.optString("assistantId", DEFAULT_ASSISTANT_ID) : DEFAULT_ASSISTANT_ID;
+            put(conversation, "assistantId", target);
+            persist(id, conversation);
+            broadcastListInvalidate(target);
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "assistantId", target);
+            responder.json(200, out);
+            return;
+        }
+        if (tail.equals("context-refresh") && method.equals("POST")) {
+            JSONObject in = parseBody(rawBody);
+            JSONArray msgs = conversation.optJSONArray("messages");
+            int count = (in != null && in.has("summaryUpToIndex"))
+                    ? in.optInt("summaryUpToIndex", 0)
+                    : (msgs != null ? msgs.length() : 0);
+            put(conversation, "contextSummaryUpToIndex", Integer.valueOf(count));
+            put(conversation, "lastRefreshTime", Long.valueOf(System.currentTimeMillis()));
+            persist(id, conversation);
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "success", Boolean.TRUE);
+            put(out, "contextSummaryUpToIndex", Integer.valueOf(count));
+            put(out, "summary", "Context refreshed (" + count + " turns)");
+            put(out, "messagesSummarized", Integer.valueOf(count));
+            put(out, "tokensSaved", Integer.valueOf(count * 60));
+            put(out, "error", JSONObject.NULL);
+            responder.json(200, out);
+            return;
+        }
+        if (tail.equals("skills") && method.equals("POST")) {
+            JSONObject in = parseBody(rawBody);
+            JSONArray skills = in != null ? (in.has("enabledSkillIds") ? in.optJSONArray("enabledSkillIds") : in.optJSONArray("skillIds")) : null;
+            if (skills != null) {
+                put(conversation, "enabledSkillIds", skills);
+                persist(id, conversation);
+            }
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "enabledSkillIds", conversation.optJSONArray("enabledSkillIds"));
+            responder.json(200, out);
+            return;
+        }
+        if (tail.equals("fork") && method.equals("POST")) {
+            JSONObject in = parseBody(rawBody);
+            String fromMsgId = in != null ? (in.has("messageId") ? in.optString("messageId", null) : in.optString("nodeId", null)) : null;
+            int nodeIndex = in != null ? in.optInt("nodeIndex", -1) : -1;
+            String newId = "c" + Long.toHexString(System.currentTimeMillis())
+                    + "-" + Long.toHexString(idSeq.getAndIncrement());
+            JSONObject forked = forkConversation(conversation, newId, fromMsgId, nodeIndex);
+            persist(newId, forked);
+            broadcastListInvalidate(forked.optString("assistantId", DEFAULT_ASSISTANT_ID));
+            JSONObject out = new JSONObject();
+            put(out, "status", "ok");
+            put(out, "conversationId", newId);
+            put(out, "forkConversationId", newId);
+            responder.json(200, out);
+            return;
+        }
+        if (tail.startsWith("nodes/") && tail.endsWith("/select") && method.equals("POST")) {
+            String mid = tail.substring("nodes/".length(), tail.length() - "/select".length());
+            JSONObject in = parseBody(rawBody);
+            int selectIdx = in != null ? in.optInt("selectIndex", 0) : 0;
+            selectNodeBranch(id, conversation, mid, selectIdx, responder);
+            return;
+        }
+        if (tail.startsWith("messages/") && method.equals("DELETE")) {
+            String msgId = tail.substring("messages/".length());
+            deleteMessageFromConversation(id, conversation, msgId, responder);
+            return;
+        }
+        if (tail.equals("regenerate") && method.equals("POST")) {
+            JSONObject in = parseBody(rawBody);
+            String msgId = in != null ? in.optString("messageId", null) : null;
+            regenerateConversationTurn(id, conversation, msgId, responder);
+            return;
+        }
+        if (tail.equals("tool-approval") && method.equals("POST")) {
             responder.json(200, status("ok"));
             return;
         }
         responder.json(404, LoopbackServer.errorJson("not_found",
                 "Unknown conversation path: /" + tail));
+    }
+
+    private static String generateConversationTitle(JSONObject conversation) {
+        JSONArray nodes = conversation.optJSONArray("messages");
+        if (nodes != null && nodes.length() > 0) {
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONObject n = nodes.optJSONObject(i);
+                if (n == null) continue;
+                JSONArray msgs = n.optJSONArray("messages");
+                if (msgs == null) continue;
+                for (int m = 0; m < msgs.length(); m++) {
+                    JSONObject msg = msgs.optJSONObject(m);
+                    if (msg != null && "USER".equalsIgnoreCase(msg.optString("role", ""))) {
+                        JSONArray parts = msg.optJSONArray("parts");
+                        if (parts != null && parts.length() > 0) {
+                            for (int p = 0; p < parts.length(); p++) {
+                                JSONObject part = parts.optJSONObject(p);
+                                if (part != null && "text".equals(part.optString("type", ""))) {
+                                    String text = part.optString("text", "").trim();
+                                    if (!text.isEmpty()) {
+                                        return text.length() > 28 ? text.substring(0, 28) + "..." : text;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return "Conversation";
+    }
+
+    private JSONObject forkConversation(JSONObject source, String newId, String messageId, int nodeIndex) {
+        JSONObject forked = new JSONObject();
+        put(forked, "id", newId);
+        put(forked, "assistantId", source.optString("assistantId", DEFAULT_ASSISTANT_ID));
+        String title = source.optString("title", "");
+        put(forked, "title", title.isEmpty() ? "Forked Chat" : title + " (Fork)");
+        put(forked, "enabledSkillIds", source.optJSONArray("enabledSkillIds"));
+        put(forked, "chatSuggestions", new JSONArray());
+        put(forked, "truncateIndex", Integer.valueOf(-1));
+        put(forked, "isPinned", Boolean.FALSE);
+        put(forked, "isFork", Boolean.TRUE);
+        put(forked, "isConsolidated", Boolean.FALSE);
+        put(forked, "contextSummaryUpToIndex", Integer.valueOf(0));
+        put(forked, "lastPruneTime", Long.valueOf(0));
+        put(forked, "lastPruneMessageCount", Integer.valueOf(0));
+        put(forked, "lastRefreshTime", Long.valueOf(0));
+        put(forked, "createAt", Long.valueOf(System.currentTimeMillis()));
+        put(forked, "updateAt", Long.valueOf(System.currentTimeMillis()));
+        put(forked, "isGenerating", Boolean.FALSE);
+
+        JSONArray sourceNodes = source.optJSONArray("messages");
+        JSONArray newNodes = new JSONArray();
+        if (sourceNodes != null) {
+            boolean stop = false;
+            for (int i = 0; i < sourceNodes.length() && !stop; i++) {
+                if (nodeIndex >= 0 && i > nodeIndex) {
+                    break;
+                }
+                JSONObject n = sourceNodes.optJSONObject(i);
+                if (n == null) continue;
+                newNodes.put(n);
+                if (nodeIndex >= 0 && i == nodeIndex) {
+                    break;
+                }
+                if (messageId != null) {
+                    JSONArray msgs = n.optJSONArray("messages");
+                    if (msgs != null) {
+                        for (int m = 0; m < msgs.length(); m++) {
+                            JSONObject msg = msgs.optJSONObject(m);
+                            if (msg != null && messageId.equals(msg.optString("id", ""))) {
+                                stop = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        put(forked, "messages", newNodes);
+        return forked;
+    }
+
+    private void selectNodeBranch(String conversationId, JSONObject conversation, String nodeId,
+            int selectIndex, Responder responder) {
+        JSONArray nodes = conversation.optJSONArray("messages");
+        if (nodes != null) {
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONObject node = nodes.optJSONObject(i);
+                if (node != null && nodeId.equals(node.optString("id", ""))) {
+                    put(node, "selectIndex", Integer.valueOf(selectIndex));
+                    persist(conversationId, conversation);
+                    broadcastNode(conversationId, nodeId, i, node, false, System.currentTimeMillis());
+                    JSONObject out = new JSONObject();
+                    put(out, "status", "ok");
+                    responder.json(200, out);
+                    return;
+                }
+            }
+        }
+        responder.json(404, LoopbackServer.errorJson("not_found", "node not found"));
+    }
+
+    private void deleteMessageFromConversation(String conversationId, JSONObject conversation,
+            String messageId, Responder responder) {
+        JSONArray nodes = conversation.optJSONArray("messages");
+        if (nodes == null) {
+            responder.json(404, LoopbackServer.errorJson("not_found", "message not found"));
+            return;
+        }
+        boolean found = false;
+        JSONArray newNodes = new JSONArray();
+        for (int i = 0; i < nodes.length(); i++) {
+            JSONObject node = nodes.optJSONObject(i);
+            if (node == null) continue;
+            JSONArray msgs = node.optJSONArray("messages");
+            if (msgs == null) {
+                newNodes.put(node);
+                continue;
+            }
+            boolean nodeContains = false;
+            JSONArray newMsgs = new JSONArray();
+            for (int m = 0; m < msgs.length(); m++) {
+                JSONObject msg = msgs.optJSONObject(m);
+                if (msg != null && messageId.equals(msg.optString("id", ""))) {
+                    nodeContains = true;
+                    found = true;
+                } else if (msg != null) {
+                    newMsgs.put(msg);
+                }
+            }
+            if (!nodeContains) {
+                newNodes.put(node);
+            } else if (newMsgs.length() > 0) {
+                put(node, "messages", newMsgs);
+                int select = node.optInt("selectIndex", 0);
+                if (select >= newMsgs.length()) {
+                    put(node, "selectIndex", Integer.valueOf(newMsgs.length() - 1));
+                }
+                newNodes.put(node);
+            }
+        }
+        if (!found) {
+            responder.json(404, LoopbackServer.errorJson("not_found", "message not found"));
+            return;
+        }
+        put(conversation, "messages", newNodes);
+        persist(conversationId, conversation);
+        broadcastListInvalidate(conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
+        JSONObject out = new JSONObject();
+        put(out, "status", "ok");
+        responder.json(200, out);
+    }
+
+    private void regenerateConversationTurn(String conversationId, JSONObject conversation,
+            String messageId, Responder responder) throws Exception {
+        JSONArray nodes = conversation.optJSONArray("messages");
+        if (nodes == null || nodes.length() == 0) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "empty conversation"));
+            return;
+        }
+        int targetIndex = nodes.length() - 1;
+        if (messageId != null && !messageId.isEmpty()) {
+            for (int i = 0; i < nodes.length(); i++) {
+                JSONObject n = nodes.optJSONObject(i);
+                if (n == null) continue;
+                JSONArray msgs = n.optJSONArray("messages");
+                if (msgs != null) {
+                    for (int m = 0; m < msgs.length(); m++) {
+                        JSONObject msg = msgs.optJSONObject(m);
+                        if (msg != null && messageId.equals(msg.optString("id", ""))) {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        JSONObject targetNode = nodes.optJSONObject(targetIndex);
+        if (targetNode == null) {
+            responder.json(400, LoopbackServer.errorJson("bad_request", "node not found"));
+            return;
+        }
+
+        String newMsgId = messageId();
+        String modelId = currentModelId();
+        final Generation gen = new Generation(conversationId, targetNode.optString("id", messageId()),
+                modelId, conversation, true);
+        JSONArray msgs = targetNode.optJSONArray("messages");
+        if (msgs == null) {
+            msgs = new JSONArray();
+            put(targetNode, "messages", msgs);
+        }
+        msgs.put(newMessage(newMsgId, "ASSISTANT", new JSONArray(), gen.modelId));
+        put(targetNode, "selectIndex", Integer.valueOf(msgs.length() - 1));
+
+        put(conversation, "isGenerating", Boolean.TRUE);
+        persist(conversationId, conversation);
+        broadcastNode(conversationId, gen.nodeId, targetIndex, targetNode, true, System.currentTimeMillis());
+
+        generations.put(conversationId, gen);
+
+        JSONArray history = new JSONArray();
+        for (int i = 0; i < targetIndex; i++) {
+            JSONObject n = nodes.optJSONObject(i);
+            if (n == null) continue;
+            JSONArray ms = n.optJSONArray("messages");
+            if (ms == null) continue;
+            for (int m = 0; m < ms.length(); m++) {
+                JSONObject msg = ms.optJSONObject(m);
+                if (msg != null) history.put(relayMessage(msg));
+            }
+        }
+
+        JSONObject body = new JSONObject();
+        put(body, "model", gen.modelId);
+        put(body, "messages", history);
+        put(body, "stream", Boolean.TRUE);
+
+        final int finalNodeIndex = targetIndex;
+        relayClient.streamChat(gen.nodeId, body, new RelayClient.StreamHandler() {
+            @Override public void onOpen(String r) {}
+            @Override public void onDelta(String r, String reasoning, String content) {
+                if (gen.finished) return;
+                synchronized (gen) {
+                    if (reasoning != null) gen.reasoning.append(reasoning);
+                    if (content != null) gen.content.append(content);
+                }
+                publishPartial(gen, finalNodeIndex, System.currentTimeMillis());
+            }
+            @Override public void onDone(String r, Integer p, Integer c) {
+                finishGeneration(gen, finalNodeIndex, p, c);
+            }
+            @Override public void onError(String r, String message) {
+                gen.finished = true;
+                generations.remove(gen.conversationId);
+                put(gen.conversation, "isGenerating", Boolean.FALSE);
+                persist(gen.conversationId, gen.conversation);
+                broadcastError(gen.conversationId, message);
+                broadcastListInvalidate(gen.conversation.optString("assistantId", DEFAULT_ASSISTANT_ID));
+            }
+        });
+
+        JSONObject ack = status("accepted");
+        put(ack, "conversationId", conversationId);
+        put(ack, "nodeId", gen.nodeId);
+        responder.json(200, ack);
     }
 
     private static String conversationFile(String id) {
@@ -538,8 +1219,11 @@ public final class ApiServer {
     }
 
     private JSONObject pagedConversations(Map<String, String> query) {
-        int offset = intOf(query.get("offset"), 0);
-        int limit = intOf(query.get("limit"), 20);
+        int page = query.containsKey("page") ? intOf(query.get("page"), 0) : -1;
+        int pageSize = query.containsKey("pageSize") ? intOf(query.get("pageSize"), 20) : -1;
+        int offset = page >= 0 ? page * (pageSize > 0 ? pageSize : 20) : intOf(query.get("offset"), 0);
+        int limit = pageSize > 0 ? pageSize : intOf(query.get("limit"), 20);
+
         JSONArray all = new JSONArray();
         JSONArray listed = conversationList().optJSONArray("items");
         if (listed != null) {
@@ -551,6 +1235,13 @@ public final class ApiServer {
         }
         JSONObject out = new JSONObject();
         put(out, "items", items);
+        if (page >= 0) {
+            put(out, "page", Integer.valueOf(page));
+        }
+        if (pageSize > 0) {
+            put(out, "pageSize", Integer.valueOf(pageSize));
+        }
+        put(out, "total", Integer.valueOf(all.length()));
         put(out, "hasMore", Boolean.valueOf(offset + items.length() < all.length()));
         if (offset + items.length() < all.length()) {
             put(out, "nextOffset", Integer.valueOf(offset + items.length()));
@@ -784,7 +1475,9 @@ public final class ApiServer {
             }
         });
 
-        JSONObject ack = status("accepted");
+        JSONObject ack = status("ok");
+        put(ack, "ok", Boolean.TRUE);
+        put(ack, "generationStatus", "accepted");
         put(ack, "conversationId", conversationId);
         put(ack, "nodeId", nodeId);
         return ack;
@@ -859,9 +1552,11 @@ public final class ApiServer {
                         JSONObject usage = new JSONObject();
                         if (promptTokens != null) {
                             put(usage, "promptTokens", promptTokens);
+                            put(usage, "prompt_tokens", promptTokens);
                         }
                         if (completionTokens != null) {
                             put(usage, "completionTokens", completionTokens);
+                            put(usage, "completion_tokens", completionTokens);
                         }
                         put(message, "usage", usage);
                     }
@@ -991,6 +1686,29 @@ public final class ApiServer {
         settings.put("themeId", "default");
         settings.put("searchServiceSelected", Integer.valueOf(0));
         settings.put("assistants", defaultAssistants());
+
+        JSONObject stored = store.read("settings.json");
+        if (stored != null) {
+            for (Iterator<String> it = stored.keys(); it.hasNext(); ) {
+                String k = it.next();
+                Object val = stored.opt(k);
+                if (val != null) {
+                    settings.put(k, val);
+                }
+            }
+        }
+        Object storedAssistants = settings.get("assistants");
+        if (!(storedAssistants instanceof JSONArray) || ((JSONArray) storedAssistants).length() == 0) {
+            settings.put("assistants", defaultAssistants());
+        }
+    }
+
+    private synchronized void persistSettings() {
+        JSONObject toSave = new JSONObject();
+        for (Map.Entry<String, Object> entry : settings.entrySet()) {
+            put(toSave, entry.getKey(), entry.getValue());
+        }
+        store.write("settings.json", toSave);
     }
 
     /**

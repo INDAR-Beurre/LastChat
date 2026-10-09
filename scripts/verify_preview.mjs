@@ -87,6 +87,9 @@ async function runPreviewVerification() {
 
   async function evalCode(expr) {
     const res = await send("Runtime.evaluate", { expression: expr, returnByValue: true }, sessionId);
+    if (res.result?.exceptionDetails) {
+      console.error("CDP Evaluation Error:", res.result.exceptionDetails.text, res.result.exceptionDetails.exception?.description);
+    }
     return res.result?.result?.value;
   }
 

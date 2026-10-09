@@ -1,6 +1,6 @@
 {
   "name": "lastlab",
-  "version": "1.5.0",
+  "version": "1.0.0",
   "description": "LastLab: High-Density AI Mobile Playground & Admin Console powered by @model-aggregator",
   "private": true,
   "type": "module",

@@ -53,12 +53,59 @@ public final class RelayClient {
         return v;
     }
 
+    private volatile String customRelayBaseUrl = null;
+
+    public void setCustomRelayBaseUrl(String url) {
+        this.customRelayBaseUrl = (url == null || url.trim().isEmpty()) ? null : stripTrailingSlash(url);
+    }
+
+    public String getEffectiveRelayBaseUrl() {
+        return customRelayBaseUrl != null ? customRelayBaseUrl : relayBaseUrl;
+    }
+
     public String getGatewayKey() {
         return keyStore.get();
     }
 
     public String getRelayBaseUrl() {
-        return relayBaseUrl;
+        return getEffectiveRelayBaseUrl();
+    }
+
+    public PingResult pingRelay(int timeoutMs) {
+        long start = System.currentTimeMillis();
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(getEffectiveRelayBaseUrl() + "/v1/models").openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(Math.max(1000, timeoutMs));
+            conn.setReadTimeout(Math.max(1000, timeoutMs));
+            conn.setRequestProperty("Accept", "application/json");
+            applyAuth(conn);
+            int code = conn.getResponseCode();
+            long elapsed = System.currentTimeMillis() - start;
+            boolean ok = (code >= 200 && code < 400);
+            return new PingResult(ok, elapsed, code, null);
+        } catch (Exception e) {
+            long elapsed = System.currentTimeMillis() - start;
+            return new PingResult(false, elapsed, -1, e.getMessage());
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    public static final class PingResult {
+        public final boolean ok;
+        public final long latencyMs;
+        public final int statusCode;
+        public final String error;
+        public PingResult(boolean ok, long latencyMs, int statusCode, String error) {
+            this.ok = ok;
+            this.latencyMs = latencyMs;
+            this.statusCode = statusCode;
+            this.error = error;
+        }
     }
 
     // ------------------------------------------------------------------ models
@@ -67,7 +114,7 @@ public final class RelayClient {
     public JSONObject fetchModelsBlocking(int timeoutMs) {
         HttpURLConnection conn = null;
         try {
-            conn = (HttpURLConnection) new URL(relayBaseUrl + "/v1/models").openConnection();
+            conn = (HttpURLConnection) new URL(getEffectiveRelayBaseUrl() + "/v1/models").openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(Math.max(1000, timeoutMs));
             conn.setReadTimeout(Math.max(1000, timeoutMs));
@@ -156,7 +203,7 @@ public final class RelayClient {
 
     private void runStream(String requestId, JSONObject body, StreamHandler handler, AtomicBoolean cancelled)
             throws Exception {
-        URL url = new URL(relayBaseUrl + "/v1/chat/completions");
+        URL url = new URL(getEffectiveRelayBaseUrl() + "/v1/chat/completions");
         boolean https = "https".equalsIgnoreCase(url.getProtocol());
         int port = url.getPort() > 0 ? url.getPort() : (https ? 443 : 80);
 

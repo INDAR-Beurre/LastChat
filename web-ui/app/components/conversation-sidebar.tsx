@@ -1057,7 +1057,7 @@ export const ConversationSidebar = React.memo(
             </DropdownMenu>
           </div>
           <div className="px-2 pt-1 pb-0.5 text-center text-[10px] text-muted-foreground/60 border-t border-sidebar-border/30">
-            LastLab • <span className="opacity-75">forked from LastChat</span>
+            LastLab v1.0.0 • <span className="opacity-75">Official Release</span>
           </div>
         </SidebarFooter>
       </Sidebar>

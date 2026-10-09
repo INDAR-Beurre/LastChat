@@ -18,11 +18,11 @@ echo "== badging =="
 badging="$("$AAPT2" dump badging "$APK")"
 printf '%s\n' "$badging" | sed -n '1,3p'
 
-if ! printf '%s\n' "$badging" | grep -q "versionCode='2' versionName='2.0.0'"; then
+if ! printf '%s\n' "$badging" | grep -q "versionCode='1' versionName='1.0.0'"; then
   echo "FAIL  unexpected versionCode/versionName" >&2
   exit 1
 fi
-echo "OK  versionCode 2 / versionName 2.0.0"
+echo "OK  versionCode 1 / versionName 1.0.0"
 
 echo
 echo "== server classes in dex =="

@@ -1,12 +1,21 @@
 // Minimal standalone QR Code Generator (Type 1-10, byte mode)
 // Generates SVG representation with zero dependencies
 (function (root, factory) {
+  const exported = factory();
   if (typeof define === 'function' && define.amd) {
-    define([], factory);
-  } else if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.QRCodeSVG = factory();
+    define([], function () { return exported; });
+  }
+  if (typeof module === 'object' && module.exports) {
+    module.exports = exported;
+  }
+  if (root) {
+    root.QRCodeSVG = exported;
+  }
+  if (typeof window !== 'undefined') {
+    window.QRCodeSVG = exported;
+  }
+  if (typeof globalThis !== 'undefined') {
+    globalThis.QRCodeSVG = exported;
   }
 }(typeof globalThis !== 'undefined' ? globalThis : typeof self !== 'undefined' ? self : this, function () {
 

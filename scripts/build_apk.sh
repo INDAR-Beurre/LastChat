@@ -101,6 +101,12 @@ if [ -d "$PROJECT_DIR/web-ui/build/client" ]; then
     rsync -a --delete "$PROJECT_DIR/web-ui/build/client/" "$MOBILE_DIR/assets/www/" 2>/dev/null || cp -rf "$PROJECT_DIR/web-ui/build/client/"* "$MOBILE_DIR/assets/www/"
 fi
 
+# Lightweight optimization: prune unused graphics and duplicate font formats (.ttf and .woff)
+# WebViews on Android 7+ (minSdkVersion 24) universally use .woff2; LoopbackServer provides auto-fallback.
+rm -f "$MOBILE_DIR/assets/www/lastchat-logo.png"
+rm -f "$MOBILE_DIR/assets/www/assets"/KaTeX_*.ttf
+rm -f "$MOBILE_DIR/assets/www/assets"/KaTeX_*.woff
+
 echo "[1/6] Compiling Android resources..."
 "$AAPT2" compile --dir "$MOBILE_DIR/res" -o "$BUILD_DIR/compiled_res.zip"
 
@@ -108,6 +114,9 @@ echo "[2/6] Linking APK with AAPT2 & bundling assets..."
 "$AAPT2" link \
     -I "$ANDROID_JAR" \
     --manifest "$MOBILE_DIR/AndroidManifest.xml" \
+    --min-sdk-version 24 \
+    --target-sdk-version 33 \
+    --no-version-vectors \
     -o "$BUILD_DIR/base.apk" \
     -A "$MOBILE_DIR/assets" \
     --java "$BUILD_DIR/gen" \
@@ -120,9 +129,11 @@ echo "[3/6] Compiling Java classes with javac..."
     $(find "$MOBILE_DIR/src" -name "*.java") \
     $(find "$BUILD_DIR/gen" -name "*.java")
 
-echo "[4/6] Dexing bytecode with D8..."
+echo "[4/6] Dexing bytecode with D8 (release mode & min-api 24)..."
 CLASS_FILES=$(find "$BUILD_DIR/obj" -name "*.class")
 "$JAVA" -cp "$R8_JAR" com.android.tools.r8.D8 \
+    --release \
+    --min-api 24 \
     $CLASS_FILES \
     --lib "$ANDROID_JAR" \
     --output "$BUILD_DIR/dex"

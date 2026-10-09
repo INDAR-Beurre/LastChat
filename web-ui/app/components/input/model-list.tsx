@@ -1,8 +1,9 @@
 import * as React from "react";
 
 import type { TFunction } from "i18next";
-import { Check, ChevronDown, Heart, LoaderCircle, Search } from "~/lib/material-icons";
+import { Check, ChevronDown, Heart, LoaderCircle, RefreshCw, Search } from "~/lib/material-icons";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 import { useCurrentAssistant } from "~/hooks/use-current-assistant";
 import { getModelDisplayName } from "~/lib/display";
@@ -258,19 +259,45 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
   const [directModelInput, setDirectModelInput] = React.useState("");
   const [pingLatencyMs, setPingLatencyMs] = React.useState<number | null>(null);
   const [isPinging, setIsPinging] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const handlePing = React.useCallback(async () => {
     setIsPinging(true);
     const start = performance.now();
     try {
-      await fetch("/api/health", { cache: "no-store" });
-      const elapsed = Math.round(performance.now() - start);
-      setPingLatencyMs(elapsed);
+      const res = await fetch("/api/connection/ping", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as { latencyMs?: number };
+        setPingLatencyMs(
+          typeof data.latencyMs === "number" && data.latencyMs >= 0
+            ? data.latencyMs
+            : Math.round(performance.now() - start),
+        );
+      } else {
+        await fetch("/api/health", { cache: "no-store" });
+        setPingLatencyMs(Math.round(performance.now() - start));
+      }
     } catch {
       // The probe failed, so there is no measurement to report.
       setPingLatencyMs(null);
     } finally {
       setIsPinging(false);
+    }
+  }, []);
+
+  const handleRefresh = React.useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch("/api/models/refresh", { method: "POST" });
+      if (res.ok) {
+        toast.success("Model catalog refreshed from Relay");
+      } else {
+        toast.error("Failed to refresh models");
+      }
+    } catch {
+      toast.error("Failed to refresh models");
+    } finally {
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -494,6 +521,16 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
               </span>
             </div>
             <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-card/60 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all active:scale-[0.97]"
+                title="Refresh model catalog from Relay Gateway"
+              >
+                <RefreshCw className={cn("size-3", isRefreshing && "animate-spin text-primary")} />
+                <span>{isRefreshing ? "Syncing..." : "Refresh"}</span>
+              </button>
               <button
                 type="button"
                 onClick={handlePing}

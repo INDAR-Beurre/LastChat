@@ -1,15 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+   Cloud backup + device transfer rules.
+
+   An empty <cloud-backup> means "include everything". Two credential stores
+   are excluded:
+
+     - sharedpref/encrypted_secrets.xml: Keystore-encrypted, but the AES master
+       key is device-bound and never backed up, so the ciphertext is
+       undecryptable on any other device. Backing it up leaks secret *names*
+       and gains nothing.
+     - file/datastore/settings.preferences_pb: SettingsStore. Current saves
+       blank provider.apiKey before persisting (SecretKeyManager migrates it
+       into SecureStore), but installs upgraded from older versions can still
+       carry a plaintext key here, and SecretKeyManager reads it back as a
+       fallback. Restoring that file onto a fresh device - which has no
+       Keystore master key - would reinstate those keys.
+
+   Deliberately NOT excluded: database/ (chat history, assistants) and
+   files/ (attachments), so backup/restore still works as users expect.
+   WebDAV sync remains the explicit path for moving data between devices.
 -->
 <data-extraction-rules>
   <cloud-backup>
+    <exclude domain="sharedpref" path="encrypted_secrets.xml" />
+    <exclude domain="file" path="datastore/settings.preferences_pb" />
   </cloud-backup>
-  <!--
   <device-transfer>
-      <include .../>
-      <exclude .../>
+    <exclude domain="sharedpref" path="encrypted_secrets.xml" />
+    <exclude domain="file" path="datastore/settings.preferences_pb" />
   </device-transfer>
-  -->
 </data-extraction-rules>

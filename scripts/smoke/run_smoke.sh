@@ -25,7 +25,8 @@ echo "== compiling =="
   $(find mobile/src/com/relay/lastlab/server -name '*.java' ! -name 'AndroidPlatform.java') \
   scripts/smoke/FakeRelay.java \
   scripts/smoke/SmokeMain.java \
-  scripts/smoke/RestartMain.java
+  scripts/smoke/RestartMain.java \
+  scripts/smoke/ConfigIterationsTest.java
 
 # Each run gets its own store directory so a run never inherits another's state.
 TMPDIRS=""
@@ -51,3 +52,8 @@ echo
 echo "== restart persistence =="
 new_store
 "$JAVA" -cp "$OUT:toolchain/json.jar" smoke.RestartMain
+
+echo
+echo "== 150+ configuration iterations =="
+new_store
+"$JAVA" -cp "$OUT:toolchain/json.jar" smoke.ConfigIterationsTest

@@ -50,6 +50,10 @@ public final class LoopbackServer {
         this.platform = platform;
         this.keyStore = new GatewayKeyStore(platform);
         this.relayClient = new RelayClient(relayBaseUrl, keyStore, platform);
+        String savedRelay = platform.getPref("relay_base_url", null);
+        if (savedRelay != null && !savedRelay.trim().isEmpty()) {
+            this.relayClient.setCustomRelayBaseUrl(savedRelay.trim());
+        }
         this.apiServer = new ApiServer(platform, relayClient, this.keyStore);
     }
 
@@ -243,6 +247,14 @@ public final class LoopbackServer {
             if (readAssetBytes(ASSET_ROOT + "/" + canonical) != null) {
                 responder.redirect("/" + canonical);
                 return;
+            }
+        }
+        if (bytes == null && relative != null && (relative.endsWith(".woff") || relative.endsWith(".ttf"))) {
+            int lastDot = relative.lastIndexOf('.');
+            String woff2Rel = relative.substring(0, lastDot) + ".woff2";
+            bytes = readAssetBytes(ASSET_ROOT + "/" + woff2Rel);
+            if (bytes != null) {
+                relative = woff2Rel;
             }
         }
         if (bytes == null && !hasExtension(path)) {
@@ -561,6 +573,8 @@ public final class LoopbackServer {
         JSONObject root = new JSONObject();
         try {
             root.put("error", err);
+            root.put("code", code);
+            root.put("message", message == null ? "" : message);
         } catch (Exception ignored) {
             // as above
         }

@@ -547,6 +547,7 @@ public final class SmokeMain {
             Platform platform = new FilesystemPlatform(
                     new File("build/serve-store"),
                     new File("mobile/assets"));
+            platform.setPref("gateway_key", "sk-relay-sample-key-12345");
             LoopbackServer server = new LoopbackServer(platform, relay.baseUrl());
             server.start();
             System.out.println("SERVE READY " + server.getBaseUrl());

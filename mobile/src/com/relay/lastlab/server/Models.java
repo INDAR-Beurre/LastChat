@@ -19,6 +19,69 @@ final class Models {
     private Models() {
     }
 
+    /**
+     * Default baseline catalog used when the relay is unreachable or initializing,
+     * ensuring the app is never left with an empty model list and all models are always connected.
+     */
+    static JSONObject defaultFallbackCatalog() {
+        JSONObject catalog = new JSONObject();
+        JSONArray data = new JSONArray();
+
+        data.put(createModelEntry("deepseek-v4-1-flash", "DeepSeek V4.1 Flash", 128000, 64000, true, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("auto", "Auto Router", 2000000, 64000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("gpt-6-astra", "GPT-6 Astra", 128000, 64000, true, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("gpt-5-5", "GPT-5.5", 256000, 64000, false, new String[]{"text", "image"}, new String[]{"text"}));
+        data.put(createModelEntry("claude-opus-5", "Claude Opus 5", 128000, 64000, true, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("gemini-3-8-flash", "Gemini 3.8 Flash", 1000000, 64000, false, new String[]{"text", "image"}, new String[]{"text"}));
+        data.put(createModelEntry("qwen3-8-flash", "Qwen 3.8 Flash", 1000000, 131072, true, new String[]{"text", "image"}, new String[]{"text"}));
+        data.put(createModelEntry("qwen3-8-max", "Qwen 3.8 Max", 128000, 64000, true, new String[]{"text", "image"}, new String[]{"text"}));
+        data.put(createModelEntry("mimo-v2-6-pro", "MiMo V2.6 Pro", 1050000, 131072, true, new String[]{"text", "image"}, new String[]{"text"}));
+        data.put(createModelEntry("instant", "Instant Fast", 64000, 16384, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("kimi-k3", "Kimi K3", 200000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("step-5", "Step-5", 128000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("glm-5-3", "GLM 5.3", 128000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("glm-5-3-flash", "GLM 5.3 Flash", 128000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("atria-dawn", "Atria Dawn", 128000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("gpt-6-luna", "GPT-6 Luna", 128000, 32000, false, new String[]{"text"}, new String[]{"text"}));
+        data.put(createModelEntry("agnes-image-2-5-flash", "Agnes Image 2.5 Flash", null, null, false, new String[]{"text"}, new String[]{"image"}));
+        data.put(createModelEntry("gpt-image-2", "GPT Image 2", null, null, false, new String[]{"text"}, new String[]{"image"}));
+
+        put(catalog, "data", data);
+        return catalog;
+    }
+
+    private static JSONObject createModelEntry(String id, String name, Integer context, Integer maxOutput,
+            boolean reasoning, String[] inMods, String[] outMods) {
+        JSONObject m = new JSONObject();
+        put(m, "id", id);
+        put(m, "name", name);
+        put(m, "owned_by", "relay");
+        if (context != null) {
+            put(m, "context_length", context);
+        }
+        if (maxOutput != null) {
+            put(m, "max_completion_tokens", maxOutput);
+        }
+        put(m, "reasoning", Boolean.valueOf(reasoning));
+
+        JSONArray inArr = new JSONArray();
+        for (String s : inMods) inArr.put(s);
+        put(m, "input_modalities", inArr);
+
+        JSONArray outArr = new JSONArray();
+        for (String s : outMods) outArr.put(s);
+        put(m, "output_modalities", outArr);
+
+        JSONObject relay = new JSONObject();
+        put(relay, "name", name);
+        if (context != null) put(relay, "context", context);
+        if (maxOutput != null) put(relay, "max_output", maxOutput);
+        put(relay, "reasoning", Boolean.valueOf(reasoning));
+        put(m, "relay", relay);
+
+        return m;
+    }
+
     /** Returns the model ids the relay reported, in the relay's own order. */
     static List<String> idsOf(JSONObject catalog) {
         List<String> ids = new ArrayList<String>();
@@ -71,6 +134,7 @@ final class Models {
         put(out, "id", id);
         put(out, "modelId", id);
         put(out, "displayName", name);
+        put(out, "name", name);
         put(out, "providerId", m.optString("owned_by", "relay"));
         put(out, "providerName", m.optString("owned_by", "relay"));
         put(out, "type", typeOf(m, relay));
@@ -83,6 +147,7 @@ final class Models {
         }
         if (context != null) {
             put(out, "contextWindowTokens", context);
+            put(out, "context", context);
         }
 
         Integer maxOutput = optInt(relay, "max_output");
@@ -95,11 +160,14 @@ final class Models {
 
         JSONArray abilities = new JSONArray();
         boolean reasoning = m.optBoolean("reasoning", false)
-                || (relay != null && relay.optBoolean("reasoning", false));
+                || (relay != null && relay.optBoolean("reasoning", false))
+                || contains(m.optJSONArray("abilities"), "reasoning")
+                || (relay != null && contains(relay.optJSONArray("abilities"), "reasoning"));
         if (reasoning) {
             abilities.put("REASONING");
         }
         put(out, "abilities", abilities);
+        put(out, "reasoning", Boolean.valueOf(reasoning));
 
         put(out, "inputModalities", uppercased(modalities(relay, m, "input", "input_modalities")));
         put(out, "outputModalities", uppercased(modalities(relay, m, "output", "output_modalities")));

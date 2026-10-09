@@ -1,7 +1,13 @@
 name: Release Build
 
+# Tag + manual only: this job needs signing secrets, which are not available
+# to pull requests (especially from forks). Continuous validation lives in
+# ci.yml, which needs no secrets.
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   build:

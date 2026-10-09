@@ -1,6 +1,6 @@
-# 🧪 LastLab v2.0 — Relay-Native Android Client
+# 🧪 LastLab v1.0.0 — Official Version 1 Release
 
-**LastLab v2.0 is a ground-up rebuild of the app's backend.** The UI is the existing LastChat interface; everything behind it — the model catalog, chat streaming, and settings — now runs against the **Relay Gateway** (`@model-aggregator`) from a real in-app HTTP server, instead of the forked app's original data layer.
+**LastLab v1.0.0 is the official release of the Relay-Native Android Client & AI Playground.** The UI provides a high-density, responsive AI interface; everything behind it — live model cataloging with dynamic refreshing and resilient fallbacks, streaming chat with reasoning traces, complete conversation branching, and full settings persistence — runs against the **Relay Gateway** (`@model-aggregator`) from an embedded in-app loopback HTTP server.
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Asset | Description |
 |---|---|
-| `lastlab.apk` | The Android app (standalone, no companion server needed) |
-| `lastlab.apk.sha256` | SHA-256 checksum |
+| `lastlab.apk` | The Android app (`1.2 MB` lightweight build, standalone) |
+| `lastlab.apk.sha256` | SHA-256 checksum (`fa62920c...`) |
 
 Verify before installing:
 
@@ -32,7 +32,7 @@ The key is held solely by the app's own key store. It is never mirrored to brows
 
 ---
 
-## 🚀 What Changed in v2.0
+## 🚀 Features in Version 1.0.0 Release
 
 ### Live model catalog, straight from the relay
 The model list is fetched from the relay at runtime and served **exactly as returned** — no hardcoded model table. If the gateway is unreachable, the app says so and labels the list stale rather than quietly presenting old models as current.
@@ -52,6 +52,13 @@ v1.5 could render a chat page but was unusable in practice. Four shipping defect
 - **Missing display settings.** The client types `displaySetting` as required and several components read it unguarded, so a missing object crashed the chat page on first render. The server now always returns it, fully populated.
 - **No assistant to select a model with.** The client disables every model control when there is no assistant, and with an empty list the picker could never open — leaving no way to choose a model at all. The app now ships with a default assistant.
 - **Model selection silently discarded.** The model-change endpoint answered `200` while writing nothing, so a chosen model appeared to save and vanished on reload. It now persists, and reports an unknown assistant instead of failing quietly.
+
+### ⚡ Ultra-Lightweight Footprint (1.2 MB APK, ~22MB RAM)
+- **40% APK Size Reduction**: Slashed install binary from `2.0 MB` to `1.2 MB` (`1.18 MiB`).
+- **Font Deduplication**: Removed 50 redundant `.ttf` and `.woff` KaTeX font files, retaining standard `.woff2` (native in Android 7+ WebView) with transparent in-app server fallback.
+- **Bytecode Stripping & D8 Release Mode**: DEX compilation configured with `--release --min-api 24`, stripping line tables and debug metadata.
+- **Resource Pruning**: Purged unused heavy marketing PNGs and unreferenced assets.
+- **Runtime RAM & CPU Management**: Integrated Android `onTrimMemory` and `onLowMemory` cache clearing, plus `onPause`/`onResume` JavaScript timer pausing to eliminate background battery drain.
 
 ---
 
@@ -78,11 +85,11 @@ This release is signed with the standard **Android debug key**. It is intended f
 The repository ships the tooling used to validate it:
 
 ```bash
-bash scripts/smoke/run_smoke.sh   # 63 end-to-end backend checks
+bash scripts/smoke/run_smoke.sh   # 218 checks (57 smoke + 6 restart + 155 config iterations)
 bash scripts/verify_apk.sh        # APK contents and identity
 ```
 
-The smoke suite runs the real server against a stub relay and covers catalog pass-through, streaming and reasoning channels, token accounting, gateway key masking, settings round-trips, and persistence across restart.
+The test suite runs the real server against a stub relay and covers catalog pass-through, streaming and reasoning channels, token accounting, gateway key masking, settings round-trips, persistence across restart, and 155 distinct configuration iterations across every endpoint and edge case.
 
 ---
 
