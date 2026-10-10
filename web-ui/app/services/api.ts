@@ -1,8 +1,26 @@
 import ky, { type Options, HTTPError } from "ky";
 
 interface ErrorResponse {
-  error: string;
-  code: number;
+  // The loopback/relay backend returns OpenAI-shaped bodies where `error` is an
+  // object ({message,type,code}) alongside top-level `message`/`code`. Older
+  // endpoints send `error` as a plain string. Tolerate every shape.
+  error?: unknown;
+  message?: unknown;
+  detail?: unknown;
+  code?: unknown;
+}
+
+/** Pull a human-readable string out of whatever error body the backend sent. */
+function errorMessageFromBody(body: ErrorResponse | undefined, fallback: string): string {
+  const nonEmpty = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+  const err = body?.error;
+  if (nonEmpty(err)) return err;
+  if (err && typeof err === "object" && "message" in err && nonEmpty(err.message)) {
+    return err.message;
+  }
+  if (nonEmpty(body?.message)) return body.message;
+  if (nonEmpty(body?.detail)) return body.detail;
+  return fallback;
 }
 
 interface WebAuthTokenResponse {
@@ -132,10 +150,16 @@ async function handleError(error: unknown): Promise<never> {
     } catch {
       // Ignore JSON parse error
     }
-    const code = errorData?.code ?? response.status;
-    const message = errorData?.error ?? error.message;
+    const rawCode = errorData?.code;
+    // ApiError.code must stay numeric; the loopback backend sends string codes
+    // (e.g. "gateway_key_missing"), so fall back to the HTTP status for those.
+    const code = typeof rawCode === "number" ? rawCode : response.status;
+    const message = errorMessageFromBody(errorData, error.message);
+    // Only a body that explicitly reports a 401 (JWT backend) means "web auth
+    // required"; a string app-code such as "gateway_key_missing" must not.
+    const effectiveCode = rawCode ?? response.status;
     const isAuthTokenEndpoint = response.url.includes("/api/auth/token");
-    if (code === 401 && !isAuthTokenEndpoint) {
+    if (effectiveCode === 401 && !isAuthTokenEndpoint) {
       clearWebAuthToken();
       dispatchWebAuthRequired({ message, code });
     }
