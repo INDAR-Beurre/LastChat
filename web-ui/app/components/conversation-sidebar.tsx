@@ -6,7 +6,6 @@ import type { TFunction } from "i18next";
 import { toast } from "sonner";
 import {
   Check,
-  Key,
   Laptop,
   Languages,
   Moon,
@@ -68,7 +67,6 @@ import {
 } from "~/components/theme-provider";
 import { ConversationSearchButton } from "~/components/conversation-search-button";
 import { CustomThemeDialog } from "~/components/custom-theme-dialog";
-import { GatewayKeyDialog, useGatewayKey } from "~/components/gateway-key-dialog";
 import Logo from "~/components/logo";
 import { getAssistantDisplayName } from "~/lib/display";
 import { clearWebAuthToken } from "~/services/api";
@@ -592,8 +590,6 @@ export const ConversationSidebar = React.memo(
 
     const [pickerOpen, setPickerOpen] = React.useState(false);
     const [customThemeOpen, setCustomThemeOpen] = React.useState(false);
-    const [gatewayKeyOpen, setGatewayKeyOpen] = React.useState(false);
-    const { state: gatewayKeyState, reload: reloadGatewayKey } = useGatewayKey();
     const [selectedTagIds, setSelectedTagIds] = React.useState<string[]>([]);
     const [switchingAssistantId, setSwitchingAssistantId] = React.useState<string | null>(null);
     const [switchError, setSwitchError] = React.useState<string | null>(null);
@@ -929,14 +925,6 @@ export const ConversationSidebar = React.memo(
             </DialogContent>
           </Dialog>
 
-          <GatewayKeyDialog
-            open={gatewayKeyOpen}
-            onOpenChange={setGatewayKeyOpen}
-            state={gatewayKeyState}
-            onChanged={() => {
-              void reloadGatewayKey();
-            }}
-          />
           <CustomThemeDialog
             open={customThemeOpen}
             onOpenChange={setCustomThemeOpen}
@@ -1035,19 +1023,6 @@ export const ConversationSidebar = React.memo(
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
-                    setGatewayKeyOpen(true);
-                  }}
-                >
-                  <Key className="size-4" />
-                  <span className="flex-1">{t("gateway_key_dialog.title")}</span>
-                  <Check
-                    className={
-                      gatewayKeyState?.configured ? "size-4" : "size-4 opacity-0"
-                    }
-                  />
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
                     setCustomThemeOpen(true);
                   }}
                 >
@@ -1057,7 +1032,7 @@ export const ConversationSidebar = React.memo(
             </DropdownMenu>
           </div>
           <div className="px-2 pt-1 pb-0.5 text-center text-[10px] text-muted-foreground/60 border-t border-sidebar-border/30">
-            LastLab v1.0.1 • <span className="opacity-75">Official Release</span>
+            LastLab v1.0.2 • <span className="opacity-75">Official Release</span>
           </div>
         </SidebarFooter>
       </Sidebar>

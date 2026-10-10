@@ -15,6 +15,7 @@ import {
   LoaderCircle,
   Plus,
   Square,
+  Tune,
   Video,
   X,
 } from "~/lib/material-icons";
@@ -1064,7 +1065,7 @@ function ChatInputInner({
                     title="Hyperparameters & Tuning (Temperature, Top-P, Reasoning, Presets)"
                     data-no-touch-enforce
                   >
-                    <span className="text-sm">🎛️</span>
+                    <Tune className="size-4" />
                   </Button>
                 </>
               ) : null}

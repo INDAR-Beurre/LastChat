@@ -7,8 +7,12 @@ import {
   ConversationQuickJump,
   getConversationMessageAnchorId,
 } from "~/components/conversation-quick-jump";
-import { ConversationGreeting } from "~/components/conversation-greeting";
+import {
+  ConversationGreeting,
+  OPEN_GATEWAY_KEY_EVENT,
+} from "~/components/conversation-greeting";
 import { ConversationSidebar } from "~/components/conversation-sidebar";
+import { GatewayKeyDialog, useGatewayKey } from "~/components/gateway-key-dialog";
 import {
   Conversation,
   ConversationContent,
@@ -20,6 +24,15 @@ import { AssistantTurnMessage } from "~/components/message/assistant-turn-messag
 import { ChatMessage } from "~/components/message/chat-message";
 import { parseAskUserQuestions, safeJsonParse, TOOL_NAMES } from "~/lib/tool-activity";
 import { Button } from "~/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import { Key, Settings as SettingsIcon, Terminal, Tune } from "~/lib/material-icons";
 import { Drawer, DrawerContent } from "~/components/ui/drawer";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
 import { TypingIndicator } from "~/components/ui/typing-indicator";
@@ -679,9 +692,12 @@ function ConversationsPageInner() {
   const [inspectorData, setInspectorData] = React.useState<InspectorData | null>(null);
   const [playgroundParams, setPlaygroundParams] =
     React.useState<PlaygroundParameters>(DEFAULT_PARAMETERS);
+  const [gatewayKeyOpen, setGatewayKeyOpen] = React.useState(false);
+  const { state: gatewayKeyState, reload: reloadGatewayKey } = useGatewayKey();
 
   React.useEffect(() => {
     const handleOpenTuning = () => setTuningOpen(true);
+    const handleOpenGatewayKey = () => setGatewayKeyOpen(true);
     const handleOpenInspector = (e: Event) => {
       const customEvent = e as CustomEvent<InspectorData | undefined>;
       if (customEvent.detail) {
@@ -691,9 +707,11 @@ function ConversationsPageInner() {
     };
 
     window.addEventListener("lastlab:open-tuning", handleOpenTuning);
+    window.addEventListener(OPEN_GATEWAY_KEY_EVENT, handleOpenGatewayKey);
     window.addEventListener("lastlab:open-inspector", handleOpenInspector as EventListener);
     return () => {
       window.removeEventListener("lastlab:open-tuning", handleOpenTuning);
+      window.removeEventListener(OPEN_GATEWAY_KEY_EVENT, handleOpenGatewayKey);
       window.removeEventListener("lastlab:open-inspector", handleOpenInspector as EventListener);
     };
   }, []);
@@ -1101,7 +1119,7 @@ function ConversationsPageInner() {
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-4">
-          <ConversationGreeting />
+          <ConversationGreeting gatewayConfigured={settings?.gatewayConfigured ?? true} />
         </div>
       )}
 
@@ -1186,38 +1204,68 @@ function ConversationsPageInner() {
           </div>
 
           <div className="pointer-events-auto flex items-center gap-1.5">
-            <Button
-              id="tuning-trigger-btn"
-              data-testid="tuning-trigger-btn"
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setTuningOpen(true)}
-              className="h-8 rounded-full border-border/60 bg-background/80 px-2.5 text-xs text-foreground shadow-xs backdrop-blur hover:bg-accent/80 transition-all active:scale-[0.97]"
-              title="Hyperparameters & System Tuning (Temperature, Top-P, Reasoning, Presets)"
-              data-no-touch-enforce
-            >
-              <span>🎛️</span>
-              <span className="hidden sm:inline font-medium">Tuning</span>
-            </Button>
-
-            <Button
-              id="inspect-raw-btn"
-              data-testid="inspect-raw-btn"
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setInspectorData(buildCurrentInspectorData());
-                setInspectorOpen(true);
-              }}
-              className="h-8 rounded-full border-border/60 bg-background/80 px-2.5 text-xs text-foreground shadow-xs backdrop-blur hover:bg-accent/80 transition-all active:scale-[0.97]"
-              title="Raw Protocol & Telemetry Inspector (cURL, SSE Payloads, Edge Latency)"
-              data-no-touch-enforce
-            >
-              <span>🔍</span>
-              <span className="hidden sm:inline font-medium">Inspect</span>
-            </Button>
+            {settings?.gatewayConfigured === false && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => window.dispatchEvent(new CustomEvent(OPEN_GATEWAY_KEY_EVENT))}
+                className="h-8 rounded-full bg-amber-500 px-3 text-xs font-semibold text-amber-950 shadow-xs transition-all hover:bg-amber-400 active:scale-[0.97]"
+                title="Connect your Relay Gateway key"
+              >
+                <Key className="size-3.5" />
+                <span>Connect</span>
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Settings"
+                  title="Settings"
+                  className="relative h-8 w-8 rounded-full border-border/60 bg-background/80 text-foreground shadow-xs backdrop-blur transition-all hover:bg-accent/80 active:scale-[0.97]"
+                >
+                  <SettingsIcon className="size-4" />
+                  {settings?.gatewayConfigured === false && (
+                    <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-500 ring-2 ring-background" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                <DropdownMenuItem
+                  data-testid="gateway-key-menu-item"
+                  onClick={() => window.dispatchEvent(new CustomEvent(OPEN_GATEWAY_KEY_EVENT))}
+                >
+                  <Key className="size-4" />
+                  <span className="flex-1">Gateway key</span>
+                  {settings?.gatewayConfigured ? (
+                    <span className="size-2 rounded-full bg-emerald-500" />
+                  ) : (
+                    <span className="text-[10px] font-semibold text-amber-500">Required</span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  data-testid="tuning-trigger-btn"
+                  onClick={() => setTuningOpen(true)}
+                >
+                  <Tune className="size-4" />
+                  <span className="flex-1">Tuning &amp; parameters</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="inspect-raw-btn"
+                  onClick={() => {
+                    setInspectorData(buildCurrentInspectorData());
+                    setInspectorOpen(true);
+                  }}
+                >
+                  <Terminal className="size-4" />
+                  <span className="flex-1">Raw inspector</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -1286,6 +1334,15 @@ function ConversationsPageInner() {
           open={inspectorOpen}
           onOpenChange={setInspectorOpen}
           data={inspectorData || buildCurrentInspectorData()}
+        />
+
+        <GatewayKeyDialog
+          open={gatewayKeyOpen}
+          onOpenChange={setGatewayKeyOpen}
+          state={gatewayKeyState}
+          onChanged={() => {
+            void reloadGatewayKey();
+          }}
         />
       </SidebarInset>
     </SidebarProvider>

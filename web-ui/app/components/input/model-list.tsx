@@ -1,7 +1,18 @@
 import * as React from "react";
 
 import type { TFunction } from "i18next";
-import { Check, ChevronDown, Heart, LoaderCircle, RefreshCw, Search } from "~/lib/material-icons";
+import {
+  Bolt,
+  Brain,
+  Check,
+  ChevronDown,
+  FlashOn,
+  Heart,
+  LoaderCircle,
+  RefreshCw,
+  Search,
+  Visibility,
+} from "~/lib/material-icons";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -553,7 +564,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                     ? "Pinging..."
                     : pingLatencyMs !== null
                       ? `${pingLatencyMs}ms`
-                      : "⚡ Ping"}
+                      : "Ping"}
                 </span>
               </button>
               <span className="text-[9px] text-muted-foreground/60 font-mono hidden sm:inline">
@@ -608,7 +619,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                   : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
-              <span>🧠</span> Reasoning
+              <Brain className="size-3" /> Reasoning
             </button>
             <button
               type="button"
@@ -621,7 +632,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                   : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
-              <span>👁️</span> Vision
+              <Visibility className="size-3" /> Vision
             </button>
             <button
               type="button"
@@ -634,7 +645,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                   : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
-              <span>⚡</span> 1M+ Ctx
+              <Bolt className="size-3" /> 1M+ Ctx
             </button>
             <button
               type="button"
@@ -647,7 +658,7 @@ export function ModelList({ disabled = false, className, onChanged }: ModelListP
                   : "bg-muted/60 text-muted-foreground hover:bg-accent/60",
               )}
             >
-              <span>🔥</span> Fast
+              <FlashOn className="size-3" /> Fast
             </button>
             <button
               type="button"
